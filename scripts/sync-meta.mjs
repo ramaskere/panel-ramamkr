@@ -47,7 +47,11 @@ async function organic() {
       const biz = await graphAll('me/businesses', { fields: 'id' }).catch(() => []);
       for (const b of biz) for (const edge of ['owned_pages', 'client_pages']) pages = pages.concat(await graphAll(`${b.id}/${edge}`, { fields: 'name,instagram_business_account{id,username}' }).catch(() => []));
     }
-    ig = pages.map(p => p.instagram_business_account?.id).find(Boolean);
+    const accts = pages.map(p => p.instagram_business_account).filter(Boolean);
+    const want = (process.env.IG_USERNAME || 'ramaruiz.ads').toLowerCase();
+    const mine = accts.find(a => (a.username || '').toLowerCase() === want);
+    console.log('Cuentas de Instagram visibles:', accts.length, '| coincide con @' + want + ':', mine ? 'sí' : 'no');
+    ig = (mine || accts[0])?.id;
     if (!ig) throw new Error('No encontré una cuenta de Instagram profesional vinculada a una página.');
   }
   console.log('Cuenta de Instagram encontrada.');
