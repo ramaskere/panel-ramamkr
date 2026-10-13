@@ -50,7 +50,9 @@ async function organic() {
     ig = pages.map(p => p.instagram_business_account?.id).find(Boolean);
     if (!ig) throw new Error('No encontré una cuenta de Instagram profesional vinculada a una página.');
   }
+  console.log('Cuenta de Instagram encontrada.');
   const media = await graphAll(`${ig}/media`, { fields: 'id,caption,media_type,media_product_type,permalink,timestamp,like_count,comments_count', limit: '50' });
+  console.log('Publicaciones encontradas:', media.length);
   const docs = {};
   for (const m of media.slice(0, 60)) {
     let reach = 0, saved = 0, shares = 0;
@@ -108,11 +110,9 @@ function upsert(col, incoming) {
 }
 
 try {
-  const me = await graph('me', { fields: 'id,name' });
-  const perms = await graphAll('me/permissions', {});
-  const biz = await graphAll('me/businesses', { fields: 'id,name' }).catch(e => ['sin acceso: ' + e.message]);
-  console.log('Token de:', me.name, '| permisos:', perms.filter(x => x.status === 'granted').map(x => x.permission).join(', ') || 'ninguno');
-  console.log('Negocios:', JSON.stringify(biz.map(b => b.name || b)));
+  const p = await graphAll('me/accounts', { fields: 'id,instagram_business_account{id}' });
+  const a = await graphAll('me/adaccounts', { fields: 'id' });
+  console.log('Páginas visibles:', p.length, '| con Instagram:', p.filter(x => x.instagram_business_account).length, '| cuentas publicitarias visibles:', a.length);
 } catch (e) { console.warn('Diagnóstico:', e.message); }
 
 const results = await Promise.allSettled([organic(), ads()]);
