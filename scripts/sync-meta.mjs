@@ -42,7 +42,11 @@ const day = iso => (iso || '').slice(0, 10);
 async function organic() {
   let ig = process.env.IG_USER_ID;
   if (!ig) {
-    const pages = await graphAll('me/accounts', { fields: 'name,instagram_business_account{id,username}' });
+    let pages = await graphAll('me/accounts', { fields: 'name,instagram_business_account{id,username}' });
+    if (!pages.length) {
+      const biz = await graphAll('me/businesses', { fields: 'id' }).catch(() => []);
+      for (const b of biz) for (const edge of ['owned_pages', 'client_pages']) pages = pages.concat(await graphAll(`${b.id}/${edge}`, { fields: 'name,instagram_business_account{id,username}' }).catch(() => []));
+    }
     ig = pages.map(p => p.instagram_business_account?.id).find(Boolean);
     if (!ig) throw new Error('No encontré una cuenta de Instagram profesional vinculada a una página.');
   }
@@ -68,7 +72,13 @@ async function organic() {
 const OBJ = { OUTCOME_LEADS: 'Leads', OUTCOME_SALES: 'Ventas', OUTCOME_TRAFFIC: 'Tráfico', OUTCOME_AWARENESS: 'Alcance', OUTCOME_ENGAGEMENT: 'Mensajes', MESSAGES: 'Mensajes' };
 async function ads() {
   let act = process.env.AD_ACCOUNT_ID;
-  if (!act) { const a = await graphAll('me/adaccounts', { fields: 'id,name' }); act = a[0]?.id; if (!act) throw new Error('No encontré una cuenta publicitaria.'); }
+  if (!act) {
+    let a = await graphAll('me/adaccounts', { fields: 'id,name' });
+    if (!a.length) {
+      const biz = await graphAll('me/businesses', { fields: 'id' }).catch(() => []);
+      for (const b of biz) for (const edge of ['owned_ad_accounts', 'client_ad_accounts']) a = a.concat(await graphAll(`${b.id}/${edge}`, { fields: 'id,name' }).catch(() => []));
+    }
+    act = a[0]?.id; if (!act) throw new Error('No encontré una cuenta publicitaria.'); }
   if (!act.startsWith('act_')) act = 'act_' + act;
   const camps = await graphAll(`${act}/campaigns`, { fields: 'id,name,status,effective_status,objective,start_time', limit: '100' });
   const ins = await graphAll(`${act}/insights`, { level: 'campaign', fields: 'campaign_id,spend,impressions,clicks', date_preset: 'maximum', limit: '500' });
@@ -96,6 +106,14 @@ async function readData() {
 function upsert(col, incoming) {
   for (const [id, { metrics, base }] of Object.entries(incoming)) col[id] = col[id] ? { ...col[id], ...metrics } : { ...base, ...metrics, creado: Date.now() };
 }
+
+try {
+  const me = await graph('me', { fields: 'id,name' });
+  const perms = await graphAll('me/permissions', {});
+  const biz = await graphAll('me/businesses', { fields: 'id,name' }).catch(e => ['sin acceso: ' + e.message]);
+  console.log('Token de:', me.name, '| permisos:', perms.filter(x => x.status === 'granted').map(x => x.permission).join(', ') || 'ninguno');
+  console.log('Negocios:', JSON.stringify(biz.map(b => b.name || b)));
+} catch (e) { console.warn('Diagnóstico:', e.message); }
 
 const results = await Promise.allSettled([organic(), ads()]);
 const [org, adv] = results;
