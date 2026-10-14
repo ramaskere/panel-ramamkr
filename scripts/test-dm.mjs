@@ -21,7 +21,8 @@ console.log('Posts revisados:', media.length, '| comentarios según el contador 
 const since = Date.now() - 24 * 36e5;
 const matches = []; let scanned = 0;
 for (const m of media) {
-  const c = await call(`${m.id}/comments`, 'GET', { fields: 'id,text,timestamp', limit: '50' });
+  const c = await call(`${m.id}/comments`, 'GET', { fields: 'id,text,timestamp', limit: '50' }, page.access_token || META_TOKEN);
+  console.log('Token de página disponible:', page.access_token ? 'sí' : 'no', '| comentarios devueltos:', (c.j.data || []).length, c.ok ? '' : '| error ' + c.status);
   if (!c.ok) { console.log('Leer comentarios falló:', c.status, c.j.error?.message); continue; }
   for (const x of c.j.data || []) {
     scanned++;
