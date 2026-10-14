@@ -141,7 +141,8 @@ let db = null, tab = 'resumen', leadFilter = 'todos', dbError = '', needSetup = 
 const CFG_KEY = 'panel-ramamkr-conexion';
 const cfg = { repo: 'ramaskere/panel-ramamkr', file: 'datos.enc.json', pass: '', token: '' };
 try { Object.assign(cfg, JSON.parse(localStorage.getItem(CFG_KEY) || '{}')); } catch (e) {}
-const saveCfg = () => { try { localStorage.setItem(CFG_KEY, JSON.stringify({ pass: cfg.pass, token: cfg.token })); } catch (e) {} };
+const saveCfg = () => { try { localStorage.setItem(CFG_KEY, JSON.stringify({ pass: cfg.pass, token: cfg.token })); } catch (e) {} try { navigator.storage?.persist?.(); } catch (e) {} };
+const authErr = m => Object.assign(new Error(m), { auth: true });
 
 try { const t = localStorage.getItem('panel-tab'); if (TABS.some(x => x[0] === t)) tab = t; } catch (e) {}
 
@@ -263,7 +264,7 @@ function render() {
   $('#add-btn').textContent = cur[2]; $('#add-btn').dataset.new = cur[3];
   $('#add-btn').hidden = needSetup;
   if (needSetup) { $('#view').innerHTML = setupHtml(); return; }
-  $('#view').innerHTML = (dbError ? `<div class="empty"><h3>No se pudo sincronizar</h3><p>${esc(dbError)}</p></div>` : '') + VIEWS[tab]();
+  $('#view').innerHTML = (dbError ? `<div class="empty"><h3>No se pudo sincronizar</h3><p>${esc(dbError)}</p>${db ? '' : '<button class="primary" id="retry">Reintentar</button>'}</div>` : '') + VIEWS[tab]();
 }
 function setupHtml() {
   return `<form class="setup" id="setup-form"><h2>Conectar con GitHub</h2>
@@ -392,14 +393,14 @@ async function encrypt(obj, salt) {
 async function decrypt(text) {
   const f = JSON.parse(text), key = await deriveKey(unb64(f.salt));
   try { return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(f.iv) }, key, unb64(f.ct)))); }
-  catch (e) { throw new Error('La contraseña no coincide con la de tus datos.'); }
+  catch (e) { throw authErr('La contraseña no coincide con la de tus datos.'); }
 }
 let salt = null;
 
 async function load() {
   const r = await fetch(`${GH}${cfg.repo}/contents/${cfg.file}?t=${Date.now()}`, { headers: ghHeaders(), cache: 'no-store' });
   if (r.status === 404) { remote = { data: { posts: {}, camps: {}, leads: {} }, sha: null }; return; }
-  if (r.status === 401) throw new Error('El token no es válido o venció.');
+  if (r.status === 401) throw authErr('El token no es válido o venció.');
   if (!r.ok) throw new Error('GitHub respondió ' + r.status + '.');
   const j = await r.json();
   const data = await decrypt(b64utf8(j.content));
@@ -446,7 +447,7 @@ async function init() {
   if (!cfg.pass) { needSetup = true; render(); return; }
   needSetup = false; dbError = ''; setSync('Cargando…');
   try { await load(); publish(); db = dbShim; setSync(cfg.token ? 'Sincronizado' : 'Solo lectura'); }
-  catch (e) { needSetup = true; dbError = e.message; setSync(''); }
+  catch (e) { needSetup = !!e.auth; dbError = e.message; setSync(e.auth ? '' : 'Sin conexión con GitHub', !e.auth); }
   render();
 }
 document.addEventListener('submit', e => {
@@ -455,7 +456,8 @@ document.addEventListener('submit', e => {
   cfg.pass = $('#s-pass').value; cfg.token = $('#s-token').value.trim(); salt = null; saveCfg(); init();
 });
 document.addEventListener('click', e => {
-  if (e.target.closest('#cfg-btn')) { needSetup = true; dbError = ''; render(); }
+  if (e.target.closest('#retry')) init();
+  else if (e.target.closest('#cfg-btn')) { needSetup = true; dbError = ''; render(); }
   else if (e.target.closest('#forget')) { cfg.pass = ''; cfg.token = ''; try { localStorage.removeItem(CFG_KEY); } catch (x) {} S.posts = S.camps = S.leads = []; remote.data = { posts: {}, camps: {}, leads: {} }; db = null; needSetup = true; render(); }
 });
 document.addEventListener('visibilitychange', async () => {
@@ -463,6 +465,7 @@ document.addEventListener('visibilitychange', async () => {
   try { await load(); publish(); render(); } catch (e) {}
 });
 window.addEventListener('beforeunload', e => { if (unsaved.length) { e.preventDefault(); e.returnValue = ''; } });
+try { if (cfg.pass) navigator.storage?.persist?.(); } catch (e) {}
 render();
 init();
 </script>
