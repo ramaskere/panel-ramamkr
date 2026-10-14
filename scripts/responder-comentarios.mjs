@@ -89,7 +89,7 @@ for (const m of media) {
     if (rec.respuesta) { const pub = await g(`${x.id}/replies`, 'POST', { message: rec.respuesta }, tk); if (!pub.ok) console.log('Respuesta pública falló:', falla(pub)); }
     const sid = pr.j.recipient_id;
     await mutate(d => {
-      (d.atendidos ||= {})[x.id] = { recurso: rec.id, estado: rec.pregunta ? 'preguntado' : 'entregado', sid, ts: Date.now() };
+      (d.atendidos ||= {})[x.id] = { recurso: rec.id, estado: rec.pregunta ? 'preguntado' : 'entregado', sid, user: x.username || '', ts: Date.now() };
       const r = d.recursos[rec.id]; r.comentarios = (r.comentarios || 0) + 1; r.enviados = (r.enviados || 0) + 1;
     });
     enviados++;
@@ -101,9 +101,10 @@ console.log(`Comentarios leídos: ${leidos} | con palabra clave: ${coinciden} | 
 const pendientes = Object.entries(atendidos).filter(([, a]) => a.estado === 'preguntado');
 let entregados = 0, esperando = 0;
 if (pendientes.length) {
-  const convs = (await g(`${page.id}/conversations`, 'GET', { platform: 'instagram', fields: 'id,participants', limit: '50' }, tk)).j.data || [];
+  const convs = (await g(`${page.id}/conversations`, 'GET', { platform: 'instagram', fields: 'id,participants{id,username}', limit: '50' }, tk)).j.data || [];
   const porPersona = {};
-  for (const cv of convs) for (const p of cv.participants?.data || []) porPersona[p.id] = cv.id;
+  const porUsuario = {};
+  for (const cv of convs) for (const p of cv.participants?.data || []) { porPersona[p.id] = cv.id; if (p.username) porUsuario[p.username.toLowerCase()] = cv.id; }
   console.log('Diagnóstico: conversaciones visibles:', convs.length, '| personas en ellas:', Object.keys(porPersona).length, '| pendientes con conversación encontrada:', pendientes.filter(([, a]) => porPersona[a.sid]).length);
   const own = new Set([ig, page.id]);
   let avisado = false;
@@ -117,15 +118,9 @@ if (pendientes.length) {
     if (Date.now() - a.ts > 7 * DIA) { await mutate(d => { d.atendidos[cid].estado = 'vencido'; }); continue; }
     const rec = data.recursos?.[a.recurso];
     if (!rec) { esperando++; continue; }
-    let conv = porPersona[a.sid], msgs = conv ? await leer(conv) : [];
-    if (!conv) { // el ID devuelto al enviar no siempre coincide: se busca por el texto de la pregunta
-      const clave = norm(rec.pregunta || rec.dm).slice(0, 30);
-      for (const cv of convs) {
-        const mm = await leer(cv.id);
-        console.log('Diagnóstico búsqueda: mensajes:', mm.length, '| remitentes distintos:', new Set(mm.map(x => x.from?.id)).size, '| de mi cuenta:', mm.filter(x => own.has(x.from?.id)).length, '| con el texto de la pregunta:', mm.filter(x => norm(x.message).includes(clave)).length, '| a menos de 10 min:', mm.filter(x => Math.abs(new Date(x.created_time) - a.ts) < 10 * 60e3).length);
-        if (mm.some(x => own.has(x.from?.id) && norm(x.message).includes(clave) && Math.abs(new Date(x.created_time) - a.ts) < 10 * 60e3)) { conv = cv.id; msgs = mm; break; }
-      }
-    }
+    // El ID devuelto al enviar no siempre coincide con el de la conversación: se empareja por usuario.
+    let conv = porPersona[a.sid] || (a.user && porUsuario[a.user.toLowerCase()]) || (pendientes.length === 1 && convs.length === 1 ? convs[0].id : null);
+    const msgs = conv ? await leer(conv) : [];
     const resp = msgs.find(x => x.from?.id && !own.has(x.from.id) && new Date(x.created_time).getTime() > a.ts);
     console.log('Diagnóstico: conversación encontrada:', conv ? 'sí' : 'no', '| mensajes leídos:', msgs.length, '| respuesta de la persona:', resp ? 'sí' : 'no');
     if (!resp) { esperando++; continue; }
