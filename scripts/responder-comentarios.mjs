@@ -104,12 +104,14 @@ if (pendientes.length) {
   const convs = (await g(`${page.id}/conversations`, 'GET', { platform: 'instagram', fields: 'id,participants', limit: '50' }, tk)).j.data || [];
   const porPersona = {};
   for (const cv of convs) for (const p of cv.participants?.data || []) porPersona[p.id] = cv.id;
+  console.log('Diagnóstico: conversaciones visibles:', convs.length, '| personas en ellas:', Object.keys(porPersona).length, '| pendientes con conversación encontrada:', pendientes.filter(([, a]) => porPersona[a.sid]).length);
   for (const [cid, a] of pendientes) {
     if (Date.now() - a.ts > 7 * DIA) { if (auto) await mutate(d => { d.atendidos[cid].estado = 'vencido'; }); continue; }
     const conv = porPersona[a.sid];
     const rec = data.recursos?.[a.recurso];
     if (!conv || !rec) { esperando++; continue; }
     const msgs = (await g(conv, 'GET', { fields: 'messages.limit(10){message,from,created_time}' }, tk)).j.messages?.data || [];
+    console.log('Diagnóstico: mensajes leídos:', msgs.length, '| de la persona:', msgs.filter(mm => mm.from?.id === a.sid).length, '| posteriores a la pregunta:', msgs.filter(mm => mm.from?.id === a.sid && new Date(mm.created_time).getTime() > a.ts).length);
     const respondio = msgs.some(mm => mm.from?.id === a.sid && new Date(mm.created_time).getTime() > a.ts);
     if (!respondio) { esperando++; continue; }
     if (!auto) { entregados++; continue; }
