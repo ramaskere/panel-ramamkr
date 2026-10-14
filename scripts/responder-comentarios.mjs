@@ -122,6 +122,7 @@ if (pendientes.length) {
       const clave = norm(rec.pregunta || rec.dm).slice(0, 30);
       for (const cv of convs) {
         const mm = await leer(cv.id);
+        console.log('Diagnóstico búsqueda: mensajes:', mm.length, '| remitentes distintos:', new Set(mm.map(x => x.from?.id)).size, '| de mi cuenta:', mm.filter(x => own.has(x.from?.id)).length, '| con el texto de la pregunta:', mm.filter(x => norm(x.message).includes(clave)).length, '| a menos de 10 min:', mm.filter(x => Math.abs(new Date(x.created_time) - a.ts) < 10 * 60e3).length);
         if (mm.some(x => own.has(x.from?.id) && norm(x.message).includes(clave) && Math.abs(new Date(x.created_time) - a.ts) < 10 * 60e3)) { conv = cv.id; msgs = mm; break; }
       }
     }
