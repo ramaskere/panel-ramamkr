@@ -56,14 +56,13 @@ const pages = (await g('me/accounts', 'GET', { fields: 'id,access_token,instagra
 const page = pages.find(p => (p.instagram_business_account?.username || '').toLowerCase() === want);
 if (!page) throw new Error('No encontré la página vinculada al Instagram.');
 const tk = page.access_token || META_TOKEN, ig = page.instagram_business_account.id;
-own0.add(ig); own0.add(page.id);
+const own0 = new Set([ig, page.id]);
 async function enviar(recipient, text) {
   const body = { recipient: JSON.stringify(recipient), message: JSON.stringify({ text }) };
   let r = await g(`${page.id}/messages`, 'POST', body, tk);
   if (!r.ok) r = await g(`${ig}/messages`, 'POST', body);
   return r;
 }
-const own0 = new Set();
 const falla = r => `error ${r.status} (código ${r.j.error?.code}/${r.j.error?.error_subcode || '-'}): ${r.j.error?.message}`;
 
 /* 1. Comentarios nuevos con palabra clave */
