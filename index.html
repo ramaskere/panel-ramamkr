@@ -87,7 +87,8 @@ td.title { max-width: 280px; overflow-wrap: anywhere; }
 
 .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--raise); color: var(--muted); white-space: nowrap; }
 .pill.contactado, .pill.Activa { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
-.pill.agendado, .pill.Pausada { background: color-mix(in srgb, var(--warn) 20%, transparent); color: var(--warn); }
+.pill.Activo { background: color-mix(in srgb, var(--good) 20%, transparent); color: var(--good); }
+.pill.agendado, .pill.Pausada, .pill.Pausado { background: color-mix(in srgb, var(--warn) 20%, transparent); color: var(--warn); }
 .pill.venta { background: color-mix(in srgb, var(--good) 20%, transparent); color: var(--good); }
 .pill.perdido { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
 select.stage { background: var(--raise); border: 1px solid var(--line); border-radius: 8px; padding: 4px 6px; font-size: 13px; }
@@ -134,9 +135,9 @@ select.stage { background: var(--raise); border: 1px solid var(--line); border-r
 <script>
 const STAGES = [['nuevo','Nuevo'],['contactado','Contactado'],['agendado','Agendado'],['venta','Venta'],['perdido','Perdido']];
 const STAGE_LABEL = Object.fromEntries(STAGES);
-const TABS = [['resumen','Resumen','+ Nuevo lead','leads'],['leads','Leads','+ Nuevo lead','leads'],['organico','Orgánico','+ Nuevo contenido','posts'],['campanas','Campañas','+ Nueva campaña','camps']];
-const COLL = { leads:'leads', posts:'posts', camps:'camps' };
-const S = { posts: [], camps: [], leads: [] };
+const TABS = [['resumen','Resumen','+ Nuevo lead','leads'],['leads','Leads','+ Nuevo lead','leads'],['organico','Orgánico','+ Nuevo contenido','posts'],['campanas','Campañas','+ Nueva campaña','camps'],['recursos','Recursos','+ Nuevo recurso','recursos']];
+const COLL = { leads:'leads', posts:'posts', camps:'camps', recursos:'recursos', config:'config' };
+const S = { posts: [], camps: [], leads: [], recursos: [], config: [] };
 let db = null, tab = 'resumen', leadFilter = 'todos', dbError = '', needSetup = false;
 const CFG_KEY = 'panel-ramamkr-conexion';
 const cfg = { repo: 'ramaskere/panel-ramamkr', file: 'datos.enc.json', pass: '', token: '' };
@@ -256,7 +257,17 @@ function viewCampanas() {
   return `<section class="sec"><div class="sec-head"><h2>Campañas</h2><span class="hint">${S.camps.length} campañas · ${money(gasto)} invertidos</span></div>${table([['Campaña'], ['Estado'], ['Gasto', 'r'], ['Impresiones', 'r'], ['Clics', 'r'], ['Leads', 'r'], ['Agendas', 'r'], ['Ventas', 'r'], ['Ingresos', 'r'], ['ROAS', 'r']], rows)}</section>`;
 }
 
-const VIEWS = { resumen: viewResumen, leads: viewLeads, organico: viewOrganico, campanas: viewCampanas };
+const autoOn = () => !!S.config.find(c => c.id === 'auto')?.activo;
+function viewRecursos() {
+  const head = `<div class="sec-head"><h2>Recursos</h2><button class="ghost" id="toggle-auto" aria-pressed="${autoOn()}">Respuestas automáticas: ${autoOn() ? 'encendidas' : 'apagadas'}</button></div>`;
+  if (!S.recursos.length) return `<section class="sec">${head}<div class="empty"><h3>Todavía no hay recursos</h3><p>Un recurso es lo que recibe una persona cuando comenta una palabra clave en tu contenido. Por ejemplo, "impulsé" entrega las 3 razones por las que su anuncio no vendió. Crea el primero y queda guardado, cifrado con tu contraseña.</p><button class="primary" data-new="recursos">+ Nuevo recurso</button></div></section>`;
+  const rows = S.recursos.map(r => {
+    const post = r.post ? S.posts.find(p => 'post:' + p.id === r.post) : null;
+    return `<tr class="click" data-edit="recursos:${r.id}"><td class="title">${esc(r.nombre || 'Sin nombre')}<div class="sub">Palabra: <b>${esc(r.palabra || '')}</b></div></td><td class="title dim">${r.post ? esc(post ? (post.titulo || 'Sin título') : 'Post eliminado') : 'Cualquier post'}</td><td><span class="pill ${esc(r.estado)}">${esc(r.estado || '—')}</span></td><td class="r">${int(r.comentarios)}</td><td class="r">${int(r.enviados)}</td><td class="r">${int(r.respuestas)}</td></tr>`;
+  });
+  return `<section class="sec">${head}<span class="hint">Cuando alguien comenta la palabra clave, recibe el texto del recurso por mensaje directo. Con las respuestas automáticas apagadas no se envía nada. El envío automático se conecta cuando terminemos las pruebas con Instagram.</span>${table([['Recurso'], ['Se activa en'], ['Estado'], ['Comentarios', 'r'], ['DM enviados', 'r'], ['Respuestas', 'r']], rows)}</section>`;
+}
+const VIEWS = { recursos: viewRecursos, resumen: viewResumen, leads: viewLeads, organico: viewOrganico, campanas: viewCampanas };
 
 function render() {
   $('#tabs').innerHTML = TABS.map(([k, v]) => `<button role="tab" data-tab="${k}" aria-selected="${tab === k}">${v}</button>`).join('');
@@ -284,11 +295,20 @@ const FORMS = {
   camps: { title: 'campaña', fields: () => [
     ['nombre', 'Nombre', 'text', { full: 1, ph: 'Ej: Ventas con Ads, mensajes' }], ['estado', 'Estado', 'select', { opts: ['Activa', 'Pausada', 'Finalizada'] }], ['objetivo', 'Objetivo', 'select', { opts: ['Mensajes', 'Leads', 'Ventas', 'Tráfico', 'Alcance'] }],
     ['inicio', 'Inicio', 'date', { def: today() }], ['gasto', 'Gasto total (US$)', 'number'], ['impresiones', 'Impresiones', 'number'], ['clics', 'Clics', 'number']] },
+  recursos: { title: 'recurso', fields: () => [
+    ['nombre', 'Nombre del recurso', 'text', { full: 1, ph: 'Ej: 3 razones por las que tu anuncio no vendió' }],
+    ['palabra', 'Palabra clave que activa el recurso', 'text', { ph: 'Ej: impulsé' }], ['estado', 'Estado', 'select', { opts: ['Activo', 'Pausado'] }],
+    ['post', 'Se activa en', 'select', { full: 1, grouped: postOptions() }],
+    ['respuesta', 'Respuesta pública al comentario (opcional)', 'text', { full: 1, ph: 'Ej: Te lo mandé por privado' }],
+    ['dm', 'Mensaje directo con el recurso', 'textarea', { full: 1 }]] },
   leads: { title: 'lead', fields: () => [
     ['nombre', 'Nombre', 'text', { full: 1 }], ['usuario', 'Usuario de IG o contacto', 'text'], ['fecha', 'Fecha de entrada', 'date', { def: today() }],
     ['origen', 'De dónde vino', 'select', { full: 1, grouped: originOptions() }], ['etapa', 'Etapa', 'select', { opts: STAGES }], ['monto', 'Monto de la venta (US$)', 'number'],
     ['agendado', 'Llegó a agendar una llamada', 'check', { full: 1 }], ['notas', 'Notas', 'textarea', { full: 1 }]] }
 };
+function postOptions() {
+  return `<option value="">Cualquier post</option>` + S.posts.map(p => `<option value="post:${p.id}">${esc(`${p.formato || ''} · ${p.titulo || 'Sin título'} (${dateLabel(p.fecha)})`)}</option>`).join('');
+}
 function originOptions() {
   const o = v => v.map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join('');
   return `<option value="directo">Directo / otro</option>` +
@@ -329,6 +349,7 @@ function openForm(kind, id) {
       const el = $('#form [name="' + key + '"]');
       data[key] = type === 'check' ? el.checked : type === 'number' ? (el.value === '' ? 0 : Number(el.value)) : el.value.trim();
     });
+    if (kind === 'recursos' && (!data.palabra || !data.dm)) { $('#err').textContent = 'Falta la palabra clave o el mensaje directo.'; return; }
     if (kind === 'leads' && (data.etapa === 'agendado' || data.etapa === 'venta')) data.agendado = true;
     if (!id) data.creado = Date.now();
     try { await db.collection(COLL[kind]).doc(id || undefined).set(data); close(); }
@@ -351,13 +372,14 @@ async function unseed() {
 
 /* ---------- eventos ---------- */
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-tab],[data-new],[data-edit],[data-filter],#seed,#unseed');
+  const t = e.target.closest('[data-tab],[data-new],[data-edit],[data-filter],#seed,#unseed,#toggle-auto');
   if (!t) return;
   try {
     if (t.dataset.tab) { tab = t.dataset.tab; try { localStorage.setItem('panel-tab', tab); } catch (x) {} render(); }
     else if (t.dataset.new) openForm(t.dataset.new);
     else if (t.dataset.edit) { const [k, id] = t.dataset.edit.split(':'); openForm(k, id); }
     else if (t.dataset.filter) { leadFilter = t.dataset.filter; render(); }
+    else if (t.id === 'toggle-auto') { await db.collection('config').doc('auto').set({ activo: !autoOn() }); }
     else if (t.id === 'seed') { t.disabled = true; await seed(); }
     else if (t.id === 'unseed') { t.disabled = true; await unseed(); }
   } catch (err) { dbError = err.message || err.code || 'Error desconocido'; render(); }
@@ -408,7 +430,7 @@ async function load() {
   remote = { data: { posts: {}, camps: {}, leads: {}, ...data }, sha: j.sha };
 }
 function publish() {
-  for (const c of ['posts', 'camps', 'leads']) S[c] = Object.entries(remote.data[c] || {}).map(([id, v]) => ({ id, ...v }));
+  for (const c of ['posts', 'camps', 'leads', 'recursos', 'config']) S[c] = Object.entries(remote.data[c] || {}).map(([id, v]) => ({ id, ...v }));
 }
 const applyOp = (d, o) => { d[o.c] ||= {}; if (o.t === 'set') d[o.c][o.id] = o.d; else delete d[o.c][o.id]; };
 function mutate(o) {
