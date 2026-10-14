@@ -56,12 +56,14 @@ const pages = (await g('me/accounts', 'GET', { fields: 'id,access_token,instagra
 const page = pages.find(p => (p.instagram_business_account?.username || '').toLowerCase() === want);
 if (!page) throw new Error('No encontré la página vinculada al Instagram.');
 const tk = page.access_token || META_TOKEN, ig = page.instagram_business_account.id;
+own0.add(ig); own0.add(page.id);
 async function enviar(recipient, text) {
   const body = { recipient: JSON.stringify(recipient), message: JSON.stringify({ text }) };
   let r = await g(`${page.id}/messages`, 'POST', body, tk);
   if (!r.ok) r = await g(`${ig}/messages`, 'POST', body);
   return r;
 }
+const own0 = new Set();
 const falla = r => `error ${r.status} (código ${r.j.error?.code}/${r.j.error?.error_subcode || '-'}): ${r.j.error?.message}`;
 
 /* 1. Comentarios nuevos con palabra clave */
@@ -103,6 +105,13 @@ let entregados = 0, esperando = 0;
 if (pendientes.length) {
   const convs = (await g(`${page.id}/conversations`, 'GET', { platform: 'instagram', fields: 'id,participants{id,username}', limit: '50' }, tk)).j.data || [];
   for (const f of ['other', 'spam', 'page_done', 'pending']) { const r = await g(`${page.id}/conversations`, 'GET', { platform: 'instagram', folder: f, fields: 'id,participants{id,username}', limit: '50' }, tk); console.log('Diagnóstico carpeta', f + ':', r.ok ? (r.j.data || []).length + ' conversaciones' : falla(r)); }
+  for (const [, a0] of pendientes) {
+    const rU = await g(`${page.id}/conversations`, 'GET', { platform: 'instagram', user_id: a0.sid, fields: 'id,updated_time', limit: '5' }, tk);
+    console.log('Diagnóstico por persona:', rU.ok ? (rU.j.data || []).length + ' conversaciones' : falla(rU));
+    for (const cv of rU.j.data || []) { const mm = await g(`${cv.id}/messages`, 'GET', { fields: 'message,from,created_time', limit: '10' }, tk); console.log('Diagnóstico mensajes por persona:', mm.ok ? (mm.j.data || []).map(x => `${own0.has(x.from?.id) ? 'mia' : 'otra'} ${Math.round((new Date(x.created_time) - a0.ts) / 6e4)}min`).join(' ; ') : falla(mm)); }
+    const perfil = await g(a0.sid, 'GET', { fields: 'username' }, tk);
+    console.log('Diagnóstico perfil del ID:', perfil.ok ? 'ok (usuario ' + (perfil.j.username ? 'visible' : 'oculto') + ')' : falla(perfil));
+  }
   const porPersona = {};
   const porUsuario = {};
   for (const cv of convs) for (const p of cv.participants?.data || []) { porPersona[p.id] = cv.id; if (p.username) porUsuario[p.username.toLowerCase()] = cv.id; }
