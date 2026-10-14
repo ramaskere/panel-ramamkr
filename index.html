@@ -263,7 +263,7 @@ function viewRecursos() {
   if (!S.recursos.length) return `<section class="sec">${head}<div class="empty"><h3>Todavía no hay recursos</h3><p>Un recurso es lo que recibe una persona cuando comenta una palabra clave en tu contenido. Por ejemplo, "impulsé" entrega las 3 razones por las que su anuncio no vendió. Crea el primero y queda guardado, cifrado con tu contraseña.</p><button class="primary" data-new="recursos">+ Nuevo recurso</button></div></section>`;
   const rows = S.recursos.map(r => {
     const post = r.post ? S.posts.find(p => 'post:' + p.id === r.post) : null;
-    return `<tr class="click" data-edit="recursos:${r.id}"><td class="title">${esc(r.nombre || 'Sin nombre')}<div class="sub">Palabra: <b>${esc(r.palabra || '')}</b></div></td><td class="title dim">${r.post ? esc(post ? (post.titulo || 'Sin título') : 'Post eliminado') : 'Cualquier post'}</td><td><span class="pill ${esc(r.estado)}">${esc(r.estado || '—')}</span></td><td class="r">${int(r.comentarios)}</td><td class="r">${int(r.enviados)}</td><td class="r">${int(r.respuestas)}</td></tr>`;
+    return `<tr class="click" data-edit="recursos:${r.id}"><td class="title">${esc(r.nombre || 'Sin nombre')}<div class="sub">Palabra: <b>${esc(r.palabra || '')}</b>${r.pregunta ? ' · con pregunta' : ''}</div></td><td class="title dim">${r.post ? esc(post ? (post.titulo || 'Sin título') : 'Post eliminado') : 'Cualquier post'}</td><td><span class="pill ${esc(r.estado)}">${esc(r.estado || '—')}</span></td><td class="r">${int(r.comentarios)}</td><td class="r">${int(r.enviados)}</td><td class="r">${int(r.respuestas)}</td></tr>`;
   });
   return `<section class="sec">${head}<span class="hint">Cuando alguien comenta la palabra clave, recibe el texto del recurso por mensaje directo. Con las respuestas automáticas apagadas no se envía nada. El envío automático se conecta cuando terminemos las pruebas con Instagram.</span>${table([['Recurso'], ['Se activa en'], ['Estado'], ['Comentarios', 'r'], ['DM enviados', 'r'], ['Respuestas', 'r']], rows)}</section>`;
 }
@@ -300,7 +300,8 @@ const FORMS = {
     ['palabra', 'Palabra clave que activa el recurso', 'text', { ph: 'Ej: impulsé' }], ['estado', 'Estado', 'select', { opts: ['Activo', 'Pausado'] }],
     ['post', 'Se activa en', 'select', { full: 1, grouped: postOptions() }],
     ['respuesta', 'Respuesta pública al comentario (opcional)', 'text', { full: 1, ph: 'Ej: Te lo mandé por privado' }],
-    ['dm', 'Mensaje directo con el recurso', 'textarea', { full: 1 }]] },
+    ['pregunta', 'Pregunta de calificación antes de enviar (opcional)', 'text', { full: 1, ph: 'Ej: ¿Ya pautaste o estás pensando en empezar?' }],
+    ['dm', 'Mensaje directo con el recurso (se envía siempre, después de la respuesta)', 'textarea', { full: 1 }]] },
   leads: { title: 'lead', fields: () => [
     ['nombre', 'Nombre', 'text', { full: 1 }], ['usuario', 'Usuario de IG o contacto', 'text'], ['fecha', 'Fecha de entrada', 'date', { def: today() }],
     ['origen', 'De dónde vino', 'select', { full: 1, grouped: originOptions() }], ['etapa', 'Etapa', 'select', { opts: STAGES }], ['monto', 'Monto de la venta (US$)', 'number'],
