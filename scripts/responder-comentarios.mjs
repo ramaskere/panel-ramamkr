@@ -106,7 +106,13 @@ if (pendientes.length) {
   for (const cv of convs) for (const p of cv.participants?.data || []) porPersona[p.id] = cv.id;
   console.log('Diagnóstico: conversaciones visibles:', convs.length, '| personas en ellas:', Object.keys(porPersona).length, '| pendientes con conversación encontrada:', pendientes.filter(([, a]) => porPersona[a.sid]).length);
   const own = new Set([ig, page.id]);
-  const leer = async id => (await g(id, 'GET', { fields: 'messages.limit(10){message,from,created_time}' }, tk)).j.messages?.data || [];
+  let avisado = false;
+  const leer = async id => {
+    const r1 = await g(id, 'GET', { fields: 'messages.limit(10){message,from,created_time}' }, tk);
+    let out = r1.j.messages?.data || [];
+    if (!out.length) { const r2 = await g(`${id}/messages`, 'GET', { fields: 'message,from,created_time', limit: '10' }, tk); out = r2.j.data || []; if (!avisado) { avisado = true; console.log('Diagnóstico lectura:', 'forma 1:', r1.ok ? 'ok' : falla(r1), '| forma 2:', r2.ok ? 'ok, ' + out.length : falla(r2)); } }
+    return out;
+  };
   for (const [cid, a] of pendientes) {
     if (Date.now() - a.ts > 7 * DIA) { await mutate(d => { d.atendidos[cid].estado = 'vencido'; }); continue; }
     const rec = data.recursos?.[a.recurso];
