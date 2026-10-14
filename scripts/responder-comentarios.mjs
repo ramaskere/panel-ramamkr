@@ -121,6 +121,7 @@ if (pendientes.length) {
     // El ID devuelto al enviar no siempre coincide con el de la conversación: se empareja por usuario.
     let conv = porPersona[a.sid] || (a.user && porUsuario[a.user.toLowerCase()]) || (pendientes.length === 1 && convs.length === 1 ? convs[0].id : null);
     const msgs = conv ? await leer(conv) : [];
+    console.log('Diagnóstico mensajes:', msgs.map(x => `from:${x.from?.id ? (own.has(x.from.id) ? 'mia' : 'otra') : 'sin-from'} fecha:${isNaN(new Date(x.created_time)) ? 'invalida' : Math.round((new Date(x.created_time) - a.ts) / 6e4) + 'min'} texto:${x.message ? 'si' : 'no'}`).join(' ; '));
     const resp = msgs.find(x => x.from?.id && !own.has(x.from.id) && new Date(x.created_time).getTime() > a.ts);
     console.log('Diagnóstico: conversación encontrada:', conv ? 'sí' : 'no', '| mensajes leídos:', msgs.length, '| respuesta de la persona:', resp ? 'sí' : 'no');
     if (!resp) { esperando++; continue; }
