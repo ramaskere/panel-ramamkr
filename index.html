@@ -300,8 +300,8 @@ const FORMS = {
     ['palabra', 'Palabra clave que activa el recurso', 'text', { ph: 'Ej: impulsé' }], ['estado', 'Estado', 'select', { opts: ['Activo', 'Pausado'] }],
     ['post', 'Se activa en', 'select', { full: 1, grouped: postOptions() }],
     ['respuesta', 'Respuesta pública al comentario (opcional)', 'text', { full: 1, ph: 'Ej: Te lo mandé por privado' }],
-    ['pregunta', 'Pregunta de calificación antes de enviar (opcional)', 'text', { full: 1, ph: 'Ej: ¿Ya pautaste o estás pensando en empezar?' }],
-    ['dm', 'Mensaje directo con el recurso (se envía siempre, después de la respuesta)', 'textarea', { full: 1 }]] },
+    ['pregunta', 'Pregunta al final del mensaje (opcional, la respondes tú a mano)', 'text', { full: 1, ph: 'Ej: ¿Ya pautaste o estás pensando en empezar?' }],
+    ['dm', 'Mensaje directo con el recurso (se envía de una sola vez)', 'textarea', { full: 1 }]] },
   leads: { title: 'lead', fields: () => [
     ['nombre', 'Nombre', 'text', { full: 1 }], ['usuario', 'Usuario de IG o contacto', 'text'], ['fecha', 'Fecha de entrada', 'date', { def: today() }],
     ['origen', 'De dónde vino', 'select', { full: 1, grouped: originOptions() }], ['etapa', 'Etapa', 'select', { opts: STAGES }], ['monto', 'Monto de la venta (US$)', 'number'],

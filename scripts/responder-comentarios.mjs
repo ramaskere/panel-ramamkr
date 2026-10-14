@@ -1,4 +1,4 @@
-// Responde comentarios con palabra clave y envía el recurso por mensaje privado.
+// Responde comentarios con palabra clave y envía el recurso en un único mensaje privado (respuesta privada al comentario).
 // Lee recursos y el interruptor de datos.enc.json (cifrado con DATA_PASS). Con el interruptor apagado solo informa (modo prueba).
 // Los logs son públicos: solo cantidades, nunca nombres, IDs ni textos.
 const { DATA_PASS, META_TOKEN, GITHUB_TOKEN, GITHUB_REPOSITORY } = process.env;
@@ -80,7 +80,7 @@ for (const m of media) {
     if (!auto) continue;
     if (/\[LINK\]/i.test(rec.dm)) { bloqueados++; continue; }
     if (enviados >= MAX_ENVIOS) continue;
-    const primero = rec.pregunta || rec.dm;
+    const primero = rec.pregunta ? rec.dm + '\n\n' + rec.pregunta : rec.dm; // un solo mensaje: el recurso y, si hay, la pregunta al final
     const pr = await enviar({ comment_id: x.id }, primero);
     if (!pr.ok) {
       console.log('Respuesta privada falló:', falla(pr));
@@ -90,56 +90,10 @@ for (const m of media) {
     if (rec.respuesta) { const pub = await g(`${x.id}/replies`, 'POST', { message: rec.respuesta }, tk); if (!pub.ok) console.log('Respuesta pública falló:', falla(pub)); }
     const sid = pr.j.recipient_id;
     await mutate(d => {
-      (d.atendidos ||= {})[x.id] = { recurso: rec.id, estado: rec.pregunta ? 'preguntado' : 'entregado', sid, user: x.username || '', ts: Date.now() };
+      (d.atendidos ||= {})[x.id] = { recurso: rec.id, estado: 'entregado', sid, user: x.username || '', ts: Date.now() };
       const r = d.recursos[rec.id]; r.comentarios = (r.comentarios || 0) + 1; r.enviados = (r.enviados || 0) + 1;
     });
     enviados++;
   }
 }
 console.log(`Comentarios leídos: ${leidos} | con palabra clave: ${coinciden} | respuestas enviadas: ${enviados}${bloqueados ? ' | sin enviar por [LINK] pendiente: ' + bloqueados : ''}`);
-
-/* 2. Personas que respondieron la pregunta: enviar el recurso */
-const pendientes = Object.entries(atendidos).filter(([, a]) => a.estado === 'preguntado');
-let entregados = 0, esperando = 0;
-if (pendientes.length) {
-  const convs = (await g(`${page.id}/conversations`, 'GET', { platform: 'instagram', fields: 'id,participants{id,username}', limit: '50' }, tk)).j.data || [];
-  for (const f of ['other', 'spam', 'page_done', 'pending']) { const r = await g(`${page.id}/conversations`, 'GET', { platform: 'instagram', folder: f, fields: 'id,participants{id,username}', limit: '50' }, tk); console.log('Diagnóstico carpeta', f + ':', r.ok ? (r.j.data || []).length + ' conversaciones' : falla(r)); }
-  for (const [, a0] of pendientes) {
-    const rU = await g(`${page.id}/conversations`, 'GET', { platform: 'instagram', user_id: a0.sid, fields: 'id,updated_time', limit: '5' }, tk);
-    console.log('Diagnóstico por persona:', rU.ok ? (rU.j.data || []).length + ' conversaciones' : falla(rU));
-    for (const cv of rU.j.data || []) { const mm = await g(`${cv.id}/messages`, 'GET', { fields: 'message,from,created_time', limit: '10' }, tk); console.log('Diagnóstico mensajes por persona:', mm.ok ? (mm.j.data || []).map(x => `${own0.has(x.from?.id) ? 'mia' : 'otra'} ${Math.round((new Date(x.created_time) - a0.ts) / 6e4)}min`).join(' ; ') : falla(mm)); }
-    const perfil = await g(a0.sid, 'GET', { fields: 'username' }, tk);
-    console.log('Diagnóstico perfil del ID:', perfil.ok ? 'ok (usuario ' + (perfil.j.username ? 'visible' : 'oculto') + ')' : falla(perfil));
-  }
-  const porPersona = {};
-  const porUsuario = {};
-  for (const cv of convs) for (const p of cv.participants?.data || []) { porPersona[p.id] = cv.id; if (p.username) porUsuario[p.username.toLowerCase()] = cv.id; }
-  console.log('Diagnóstico: conversaciones visibles:', convs.length, '| personas en ellas:', Object.keys(porPersona).length, '| pendientes con conversación encontrada:', pendientes.filter(([, a]) => porPersona[a.sid]).length);
-  const own = new Set([ig, page.id]);
-  let avisado = false;
-  const leer = async id => {
-    const r1 = await g(id, 'GET', { fields: 'messages.limit(10){message,from,created_time}' }, tk);
-    let out = r1.j.messages?.data || [];
-    if (!out.length) { const r2 = await g(`${id}/messages`, 'GET', { fields: 'message,from,created_time', limit: '10' }, tk); out = r2.j.data || []; if (!avisado) { avisado = true; console.log('Diagnóstico lectura:', 'forma 1:', r1.ok ? 'ok' : falla(r1), '| forma 2:', r2.ok ? 'ok, ' + out.length : falla(r2)); } }
-    return out;
-  };
-  for (const [cid, a] of pendientes) {
-    if (Date.now() - a.ts > 7 * DIA) { await mutate(d => { d.atendidos[cid].estado = 'vencido'; }); continue; }
-    const rec = data.recursos?.[a.recurso];
-    if (!rec) { esperando++; continue; }
-    // El ID devuelto al enviar no siempre coincide con el de la conversación: se empareja por usuario.
-    let conv = porPersona[a.sid] || (a.user && porUsuario[a.user.toLowerCase()]) || (pendientes.length === 1 && convs.length === 1 ? convs[0].id : null);
-    const msgs = conv ? await leer(conv) : [];
-    console.log('Diagnóstico mensajes:', msgs.map(x => `from:${x.from?.id ? (own.has(x.from.id) ? 'mia' : 'otra') : 'sin-from'} fecha:${isNaN(new Date(x.created_time)) ? 'invalida' : Math.round((new Date(x.created_time) - a.ts) / 6e4) + 'min'} texto:${x.message ? 'si' : 'no'}`).join(' ; '));
-    const resp = msgs.find(x => x.from?.id && !own.has(x.from.id) && new Date(x.created_time).getTime() > a.ts);
-    console.log('Diagnóstico: conversación encontrada:', conv ? 'sí' : 'no', '| mensajes leídos:', msgs.length, '| respuesta de la persona:', resp ? 'sí' : 'no');
-    if (!resp) { esperando++; continue; }
-    if (!auto) { entregados++; continue; }
-    if (/\[LINK\]/i.test(rec.dm)) continue;
-    const er = await enviar({ id: resp.from.id }, rec.dm);
-    if (!er.ok) { console.log('Envío del recurso falló:', falla(er)); continue; }
-    await mutate(d => { d.atendidos[cid].estado = 'entregado'; const r = d.recursos[a.recurso]; r.respuestas = (r.respuestas || 0) + 1; });
-    entregados++;
-  }
-}
-console.log(`Esperando respuesta: ${esperando} | recursos ${auto ? 'enviados' : 'que se enviarían'} tras responder: ${entregados}`);
