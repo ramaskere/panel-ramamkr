@@ -16,7 +16,8 @@ const page = pages.find(p => (p.instagram_business_account?.username || '').toLo
 if (!page) throw new Error('No encontré la página vinculada al Instagram.');
 const ig = page.instagram_business_account.id;
 
-const media = (await call(`${ig}/media`, 'GET', { fields: 'id', limit: '10' })).j.data || [];
+const media = (await call(`${ig}/media`, 'GET', { fields: 'id,comments_count', limit: '10' })).j.data || [];
+console.log('Posts revisados:', media.length, '| comentarios según el contador de Instagram:', media.reduce((a, m) => a + (m.comments_count || 0), 0));
 const since = Date.now() - 24 * 36e5;
 const matches = []; let scanned = 0;
 for (const m of media) {
