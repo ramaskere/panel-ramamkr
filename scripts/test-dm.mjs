@@ -1,6 +1,7 @@
 // Prueba de respuesta privada: busca el comentario más reciente (últimas 24 h) que contenga PALABRA en los últimos posts
 // y le envía TEXTO como mensaje privado. No imprime nombres ni IDs (el repo y sus logs son públicos).
-const { META_TOKEN, PALABRA, TEXTO } = process.env;
+const { META_TOKEN, PALABRA, TEXTO, MODO = 'leer' } = process.env;
+const norm = t => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 if (!META_TOKEN || !PALABRA || !TEXTO) throw new Error('Faltan variables.');
 const G = 'https://graph.facebook.com/v21.0';
 async function call(path, method = 'GET', params = {}, token = META_TOKEN) {
@@ -17,18 +18,19 @@ const ig = page.instagram_business_account.id;
 
 const media = (await call(`${ig}/media`, 'GET', { fields: 'id', limit: '10' })).j.data || [];
 const since = Date.now() - 24 * 36e5;
-let found = null, scanned = 0;
+const matches = []; let scanned = 0;
 for (const m of media) {
   const c = await call(`${m.id}/comments`, 'GET', { fields: 'id,text,timestamp', limit: '50' });
   if (!c.ok) { console.log('Leer comentarios falló:', c.status, c.j.error?.message); continue; }
   for (const x of c.j.data || []) {
     scanned++;
-    if ((x.text || '').toLowerCase().includes(PALABRA.toLowerCase()) && new Date(x.timestamp).getTime() >= since && (!found || x.timestamp > found.timestamp)) found = x;
+    if (norm(x.text).includes(norm(PALABRA)) && new Date(x.timestamp).getTime() >= since) matches.push(x);
   }
 }
-console.log('Comentarios leídos:', scanned, '| comentario de prueba encontrado:', found ? 'sí' : 'no');
-if (!found) process.exit(1);
-
+console.log('Comentarios leídos:', scanned, '| coinciden en las últimas 24 h:', matches.length, '| antigüedad en minutos:', matches.map(x => Math.round((Date.now() - new Date(x.timestamp)) / 6e4)).join(', ') || '-');
+if (MODO !== 'enviar') { console.log('Modo lectura: no se envió nada.'); process.exit(0); }
+if (matches.length !== 1) { console.log('Se necesita exactamente 1 coincidencia para enviar. No se envió nada.'); process.exit(1); }
+const found = matches[0];
 const msg = { recipient: JSON.stringify({ comment_id: found.id }), message: JSON.stringify({ text: TEXTO }) };
 let res = await call(`${page.id}/messages`, 'POST', msg, page.access_token || META_TOKEN);
 console.log('Intento 1 (página):', res.ok ? 'enviado' : `error ${res.status}: ${res.j.error?.message} (código ${res.j.error?.code}/${res.j.error?.error_subcode || '-'})`);

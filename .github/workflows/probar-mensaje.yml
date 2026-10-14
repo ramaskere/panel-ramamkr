@@ -8,6 +8,10 @@ on:
       texto:
         description: 'Mensaje de prueba a enviar'
         required: true
+      modo:
+        description: 'leer (no envía nada) o enviar'
+        required: true
+        default: 'leer'
       confirmar:
         description: 'Escribe ENVIAR para confirmar'
         required: true
@@ -25,3 +29,4 @@ jobs:
           META_TOKEN: ${{ secrets.TOKEN_ORG_ADS }}
           PALABRA: ${{ inputs.palabra }}
           TEXTO: ${{ inputs.texto }}
+          MODO: ${{ inputs.modo }}
