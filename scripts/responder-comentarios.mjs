@@ -102,6 +102,7 @@ const pendientes = Object.entries(atendidos).filter(([, a]) => a.estado === 'pre
 let entregados = 0, esperando = 0;
 if (pendientes.length) {
   const convs = (await g(`${page.id}/conversations`, 'GET', { platform: 'instagram', fields: 'id,participants{id,username}', limit: '50' }, tk)).j.data || [];
+  for (const f of ['other', 'spam', 'page_done', 'pending']) { const r = await g(`${page.id}/conversations`, 'GET', { platform: 'instagram', folder: f, fields: 'id,participants{id,username}', limit: '50' }, tk); console.log('Diagnóstico carpeta', f + ':', r.ok ? (r.j.data || []).length + ' conversaciones' : falla(r)); }
   const porPersona = {};
   const porUsuario = {};
   for (const cv of convs) for (const p of cv.participants?.data || []) { porPersona[p.id] = cv.id; if (p.username) porUsuario[p.username.toLowerCase()] = cv.id; }
