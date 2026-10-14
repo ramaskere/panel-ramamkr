@@ -297,7 +297,7 @@ const FORMS = {
     ['inicio', 'Inicio', 'date', { def: today() }], ['gasto', 'Gasto total (US$)', 'number'], ['impresiones', 'Impresiones', 'number'], ['clics', 'Clics', 'number']] },
   recursos: { title: 'recurso', fields: () => [
     ['nombre', 'Nombre del recurso', 'text', { full: 1, ph: 'Ej: 3 razones por las que tu anuncio no vendió' }],
-    ['palabra', 'Palabra clave que activa el recurso', 'text', { ph: 'Ej: impulsé' }], ['estado', 'Estado', 'select', { opts: ['Activo', 'Pausado'] }],
+    ['palabra', 'Palabras clave (separadas por coma)', 'text', { ph: 'Ej: guía, guia, quiero la guía' }], ['estado', 'Estado', 'select', { opts: ['Activo', 'Pausado'] }],
     ['post', 'Se activa en', 'select', { full: 1, grouped: postOptions() }],
     ['respuesta', 'Respuesta pública al comentario (una por línea, se elige una al azar)', 'textarea', { full: 1 }],
     ['saludos', 'Saludos del mensaje privado (uno por línea, se elige uno al azar)', 'textarea', { full: 1 }],

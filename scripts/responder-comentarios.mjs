@@ -43,7 +43,27 @@ async function g(path, method = 'GET', params = {}, token = META_TOKEN) {
   return { ok: r.ok, status: r.status, j };
 }
 const norm = t => (t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-const coincide = (palabra, texto) => new RegExp('(^|[^a-z0-9])' + norm(palabra).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '($|[^a-z0-9])').test(norm(texto));
+// Una letra de diferencia (sustitución, falta o sobra), sin tocar palabras cortas.
+const lev1 = (a, b) => {
+  if (a === b) return true;
+  if (Math.abs(a.length - b.length) > 1) return false;
+  let i = 0; while (i < a.length && i < b.length && a[i] === b[i]) i++;
+  if (a.length === b.length) return a.slice(i + 1) === b.slice(i + 1);
+  const [c, l] = a.length < b.length ? [a, b] : [b, a];
+  return c.slice(i) === l.slice(i + 1);
+};
+// El campo "palabra" admite varias claves separadas por coma o por línea. Se ignoran mayúsculas, tildes, letras repetidas 3+ veces,
+// plural con "s", y una letra de error en claves de una sola palabra de 5 o más letras. Las frases deben coincidir exactas.
+const claves = r => String(r.palabra || '').split(/[,\n]/).map(x => norm(x).replace(/\s+/g, ' ').trim()).filter(Boolean);
+const coincide = (rec, texto) => {
+  const t = norm(texto).replace(/(.)\1{2,}/g, '$1').replace(/\s+/g, ' ');
+  const tokens = t.split(/[^a-z0-9]+/).filter(Boolean);
+  return claves(rec).some(k => {
+    if (k.includes(' ')) return new RegExp('(^|[^a-z0-9])' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '($|[^a-z0-9])').test(t);
+    if (tokens.some(w => w === k || w === k + 's')) return true;
+    return k.length >= 5 && tokens.some(w => lev1(w, k));
+  });
+};
 
 const { data } = await load();
 const auto = !!data.config?.auto?.activo;
@@ -76,7 +96,7 @@ for (const m of media) {
   for (const x of c.j.data || []) {
     leidos++;
     if (atendidos[x.id] || (x.username || '').toLowerCase() === want || Date.now() - new Date(x.timestamp) > 7 * DIA) continue;
-    const rec = recursos.find(r => coincide(r.palabra, x.text) && (!r.post || r.post === 'post:ig-' + m.id));
+    const rec = recursos.find(r => coincide(r, x.text) && (!r.post || r.post === 'post:ig-' + m.id));
     if (!rec) continue;
     coinciden++;
     if (!auto) continue;
