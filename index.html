@@ -169,11 +169,11 @@ const byOrigin = key => stats(S.leads.filter(l => (l.origen || 'directo') === ke
 function originName(key) {
   if (!key || key === 'directo') return 'Directo / otro';
   const [t, id] = key.split(':');
-  const d = (t === 'post' ? S.posts : S.camps).find(x => x.id === id);
+  const d = (t === 'post' ? S.posts : t === 'rec' ? S.recursos : S.camps).find(x => x.id === id);
   if (!d) return 'Origen eliminado';
   return t === 'post' ? (d.titulo || 'Sin título') : (d.nombre || 'Sin nombre');
 }
-const originKind = key => !key || key === 'directo' ? 'Directo' : key.startsWith('post:') ? 'Orgánico' : 'Campaña';
+const originKind = key => !key || key === 'directo' ? 'Directo' : key.startsWith('post:') ? 'Orgánico' : key.startsWith('rec:') ? 'Lead magnet' : 'Campaña';
 
 /* ---------- vistas ---------- */
 function kpi(label, value, sub) { return `<div class="kpi"><span class="eyebrow">${label}</span><b>${value}</b><small>${sub || '&nbsp;'}</small></div>`; }
@@ -190,10 +190,10 @@ function viewResumen() {
   const cs = stats(campLeads);
   const f = (a, b, c) => `<div class="frow"><span>${a}</span><div class="track"><div class="fill" style="width:${t.leads ? Math.max(b / t.leads * 100, 0) : 0}%"></div></div><span class="num">${c}</span></div>`;
 
-  const groups = [['Orgánico', S.leads.filter(l => (l.origen || '').startsWith('post:'))], ['Campañas', campLeads], ['Directo / otro', S.leads.filter(l => !l.origen || l.origen === 'directo')]];
+  const groups = [['Orgánico', S.leads.filter(l => (l.origen || '').startsWith('post:'))], ['Campañas', campLeads], ['Lead magnets', S.leads.filter(l => (l.origen || '').startsWith('rec:'))], ['Directo / otro', S.leads.filter(l => !l.origen || l.origen === 'directo')]];
   const gRows = groups.map(([n, list]) => { const s = stats(list); return `<tr><td>${n}</td><td class="r">${s.leads}</td><td class="r">${s.agendas}</td><td class="r">${s.ventas}</td><td class="r">${money(s.ingresos)}</td><td class="r">${pct(ratio(s.ventas, s.leads))}</td></tr>`; });
 
-  const origins = [...S.posts.map(p => ['post:' + p.id, 'Orgánico']), ...S.camps.map(c => ['camp:' + c.id, 'Campaña'])]
+  const origins = [...S.posts.map(p => ['post:' + p.id, 'Orgánico']), ...S.camps.map(c => ['camp:' + c.id, 'Campaña']), ...S.recursos.map(r => ['rec:' + r.id, 'Lead magnet'])]
     .map(([k, kind]) => ({ k, kind, ...byOrigin(k) })).filter(o => o.leads > 0)
     .sort((a, b) => b.ingresos - a.ingresos || b.leads - a.leads).slice(0, 6);
   const oRows = origins.map(o => `<tr><td class="title">${esc(originName(o.k))}<div class="sub">${o.kind}</div></td><td class="r">${o.leads}</td><td class="r">${o.agendas}</td><td class="r">${o.ventas}</td><td class="r">${money(o.ingresos)}</td></tr>`);
@@ -260,12 +260,12 @@ function viewCampanas() {
 const autoOn = () => !!S.config.find(c => c.id === 'auto')?.activo;
 function viewRecursos() {
   const head = `<div class="sec-head"><h2>Recursos</h2><button class="ghost" id="toggle-auto" aria-pressed="${autoOn()}">Respuestas automáticas: ${autoOn() ? 'encendidas' : 'apagadas'}</button></div>`;
-  if (!S.recursos.length) return `<section class="sec">${head}<div class="empty"><h3>Todavía no hay recursos</h3><p>Un recurso es lo que recibe una persona cuando comenta una palabra clave en tu contenido. Por ejemplo, "impulsé" entrega las 3 razones por las que su anuncio no vendió. Crea el primero y queda guardado, cifrado con tu contraseña.</p><button class="primary" data-new="recursos">+ Nuevo recurso</button></div></section>`;
+  if (!S.recursos.length) return `<section class="sec">${head}<div class="empty"><h3>Todavía no hay recursos</h3><p>Un recurso es lo que recibe una persona cuando comenta una palabra clave en tu contenido. Por ejemplo, "impulsé" entrega las 3 razones por las que su anuncio no vendió. Crea el primero y queda guardado, cifrado con tu contraseña.</p><div class="actions"><button class="primary" data-new="recursos">+ Nuevo recurso</button><button class="ghost" id="seed-lm">Cargar mis 3 lead magnets (borrador)</button></div></div></section>`;
   const rows = S.recursos.map(r => {
-    const post = r.post ? S.posts.find(p => 'post:' + p.id === r.post) : null;
-    return `<tr class="click" data-edit="recursos:${r.id}"><td class="title">${esc(r.nombre || 'Sin nombre')}<div class="sub">Palabra: <b>${esc(r.palabra || '')}</b>${r.pregunta ? ' · con pregunta' : ''}</div></td><td class="title dim">${r.post ? esc(post ? (post.titulo || 'Sin título') : 'Post eliminado') : 'Cualquier post'}</td><td><span class="pill ${esc(r.estado)}">${esc(r.estado || '—')}</span></td><td class="r">${int(r.comentarios)}</td><td class="r">${int(r.enviados)}</td><td class="r">${int(r.respuestas)}</td></tr>`;
+    const post = r.post ? S.posts.find(p => 'post:' + p.id === r.post) : null, st = byOrigin('rec:' + r.id);
+    return `<tr class="click" data-edit="recursos:${r.id}"><td class="title">${esc(r.nombre || 'Sin nombre')}<div class="sub">Palabra: <b>${esc(r.palabra || '')}</b>${r.pregunta ? ' · con pregunta' : ''}</div></td><td class="title dim">${r.post ? esc(post ? (post.titulo || 'Sin título') : 'Post eliminado') : 'Cualquier post'}</td><td><span class="pill ${esc(r.estado)}">${esc(r.estado || '—')}</span></td><td class="r"><b>${st.leads}</b></td><td class="r">${st.agendas}</td><td class="r">${st.ventas}</td><td class="r">${money(st.ingresos)}</td></tr>`;
   });
-  return `<section class="sec">${head}<span class="hint">Cuando alguien comenta la palabra clave, recibe el texto del recurso por mensaje directo. Con las respuestas automáticas apagadas no se envía nada. El envío automático se conecta cuando terminemos las pruebas con Instagram.</span>${table([['Recurso'], ['Se activa en'], ['Estado'], ['Comentarios', 'r'], ['DM enviados', 'r'], ['Respuestas', 'r']], rows)}</section>`;
+  return `<section class="sec">${head}<span class="hint">Cuando alguien comenta la palabra clave, recibe el texto del recurso por mensaje directo. Para que un lead cuente en un recurso, elígelo en "De dónde vino" al cargarlo. Con las respuestas automáticas apagadas no se envía nada. El envío automático se conecta cuando terminemos las pruebas con Instagram.</span>${table([['Recurso'], ['Se activa en'], ['Estado'], ['Leads', 'r'], ['Agendas', 'r'], ['Ventas', 'r'], ['Ingresos', 'r']], rows)}</section>`;
 }
 const VIEWS = { recursos: viewRecursos, resumen: viewResumen, leads: viewLeads, organico: viewOrganico, campanas: viewCampanas };
 
@@ -314,6 +314,7 @@ function originOptions() {
   const o = v => v.map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join('');
   return `<option value="directo">Directo / otro</option>` +
     (S.posts.length ? `<optgroup label="Orgánico">${o(S.posts.map(p => ['post:' + p.id, `${p.formato || ''} · ${p.titulo || 'Sin título'} (${dateLabel(p.fecha)})`]))}</optgroup>` : '') +
+    (S.recursos.length ? `<optgroup label="Lead magnets">${o(S.recursos.map(r => ['rec:' + r.id, r.nombre || 'Sin nombre']))}</optgroup>` : '') +
     (S.camps.length ? `<optgroup label="Campañas">${o(S.camps.map(c => ['camp:' + c.id, c.nombre || 'Sin nombre']))}</optgroup>` : '');
 }
 function fieldHtml([key, label, type, o = {}], d) {
@@ -358,6 +359,18 @@ function openForm(kind, id) {
   };
 }
 
+/* ---------- lead magnets de Rama (borrador, en pausa hasta pegar el link de cada PDF) ---------- */
+async function seedLM() {
+  const q = '¿Ya estás pautando o estás pensando en empezar?';
+  const dm = (n, d) => `Dale, acá tenés ${n}: [LINK]\n\n${d}\n\nSi después de leerlo querés que lo veamos juntos con tu caso, escribime por acá.`;
+  const L = [
+    ['lm-checklist5', 'Los 5 básicos de Meta Ads', 'checklist', 'Te lo mandé por privado', dm('Los 5 básicos de Meta Ads', 'Son 5 chequeos para saber si tu cuenta está bien armada antes de gastar más.')],
+    ['lm-guia-anuncios', 'Guía de anuncios que venden', 'guía', 'Te la mandé por privado', dm('la Guía de anuncios que venden', 'Te ordena qué mirar para que tus anuncios vendan y no solo muestren números.')],
+    ['lm-revision-cuenta', 'Guía de revisión de cuenta', 'revisión', 'Te la mandé por privado', dm('la Guía de revisión de cuenta', 'Un paso a paso para revisar tu cuenta publicitaria y detectar dónde se te va la plata.')]
+  ];
+  for (const [id, nombre, palabra, respuesta, mensaje] of L) await db.collection('recursos').doc(id).set({ nombre, palabra, respuesta, pregunta: q, dm: mensaje, post: '', estado: 'Pausado', creado: Date.now() });
+}
+
 /* ---------- datos de ejemplo ---------- */
 async function seed() {
   const w = (c, id, d) => db.collection(c).doc(id).set({ ...d, ejemplo: true, creado: Date.now() });
@@ -373,13 +386,14 @@ async function unseed() {
 
 /* ---------- eventos ---------- */
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-tab],[data-new],[data-edit],[data-filter],#seed,#unseed,#toggle-auto');
+  const t = e.target.closest('[data-tab],[data-new],[data-edit],[data-filter],#seed,#unseed,#toggle-auto,#seed-lm');
   if (!t) return;
   try {
     if (t.dataset.tab) { tab = t.dataset.tab; try { localStorage.setItem('panel-tab', tab); } catch (x) {} render(); }
     else if (t.dataset.new) openForm(t.dataset.new);
     else if (t.dataset.edit) { const [k, id] = t.dataset.edit.split(':'); openForm(k, id); }
     else if (t.dataset.filter) { leadFilter = t.dataset.filter; render(); }
+    else if (t.id === 'seed-lm') { t.disabled = true; await seedLM(); }
     else if (t.id === 'toggle-auto') { await db.collection('config').doc('auto').set({ activo: !autoOn() }); }
     else if (t.id === 'seed') { t.disabled = true; await seed(); }
     else if (t.id === 'unseed') { t.disabled = true; await unseed(); }
