@@ -63,6 +63,8 @@ async function enviar(recipient, text) {
   if (!r.ok) r = await g(`${ig}/messages`, 'POST', body);
   return r;
 }
+// Un campo con varias líneas se interpreta como variantes: se elige una al azar.
+const elegir = t => { const l = String(t || '').split('\n').map(x => x.trim()).filter(Boolean); return l.length ? l[Math.floor(Math.random() * l.length)] : ''; };
 const falla = r => `error ${r.status} (código ${r.j.error?.code}/${r.j.error?.error_subcode || '-'}): ${r.j.error?.message}`;
 
 /* 1. Comentarios nuevos con palabra clave */
@@ -80,14 +82,15 @@ for (const m of media) {
     if (!auto) continue;
     if (/\[LINK\]/i.test(rec.dm)) { bloqueados++; continue; }
     if (enviados >= MAX_ENVIOS) continue;
-    const primero = rec.pregunta ? rec.dm + '\n\n' + rec.pregunta : rec.dm; // un solo mensaje: el recurso y, si hay, la pregunta al final
+    const primero = [elegir(rec.saludos), rec.dm, rec.pregunta].filter(Boolean).join('\n\n'); // un solo mensaje: saludo (variable), recurso y, si hay, la pregunta al final
     const pr = await enviar({ comment_id: x.id }, primero);
     if (!pr.ok) {
       console.log('Respuesta privada falló:', falla(pr));
       await mutate(d => { (d.atendidos ||= {})[x.id] = { recurso: rec.id, estado: 'error', ts: Date.now() }; });
       continue;
     }
-    if (rec.respuesta) { const pub = await g(`${x.id}/replies`, 'POST', { message: rec.respuesta }, tk); if (!pub.ok) console.log('Respuesta pública falló:', falla(pub)); }
+    const textoPublico = elegir(rec.respuesta);
+    if (textoPublico) { const pub = await g(`${x.id}/replies`, 'POST', { message: textoPublico }, tk); if (!pub.ok) console.log('Respuesta pública falló:', falla(pub)); }
     const sid = pr.j.recipient_id;
     await mutate(d => {
       (d.atendidos ||= {})[x.id] = { recurso: rec.id, estado: 'entregado', sid, user: x.username || '', ts: Date.now() };
