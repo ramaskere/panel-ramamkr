@@ -1,0 +1,28 @@
+name: Publicar en Instagram
+on:
+  workflow_dispatch:
+    inputs:
+      image_urls:
+        description: 'URLs https de las imágenes, una por línea (1 = post, 2 a 10 = carrusel)'
+        required: true
+      caption:
+        description: 'Texto del post'
+        required: true
+      confirmar:
+        description: 'Escribe PUBLICAR para confirmar'
+        required: true
+jobs:
+  publish:
+    if: ${{ inputs.confirmar == 'PUBLICAR' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/publish-ig.mjs
+        env:
+          META_TOKEN: ${{ secrets.TOKEN_ORG_ADS }}
+          IMAGE_URLS: ${{ inputs.image_urls }}
+          CAPTION: ${{ inputs.caption }}
+          IG_USER_ID: ${{ vars.IG_USER_ID }}
