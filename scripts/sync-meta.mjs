@@ -39,20 +39,18 @@ const num = v => Number(v) || 0;
 const day = iso => (iso || '').slice(0, 10);
 
 /* ---------- Instagram orgánico ---------- */
-async function organic() {
-  let ig = process.env.IG_USER_ID;
-  if (!ig) {
+async function organic(want) {
+  let ig;
+  {
     let pages = await graphAll('me/accounts', { fields: 'name,instagram_business_account{id,username}' });
     if (!pages.length) {
       const biz = await graphAll('me/businesses', { fields: 'id' }).catch(() => []);
       for (const b of biz) for (const edge of ['owned_pages', 'client_pages']) pages = pages.concat(await graphAll(`${b.id}/${edge}`, { fields: 'name,instagram_business_account{id,username}' }).catch(() => []));
     }
     const accts = pages.map(p => p.instagram_business_account).filter(Boolean);
-    const want = (process.env.IG_USERNAME || 'ramaruiz.ads').toLowerCase();
     const mine = accts.find(a => (a.username || '').toLowerCase() === want);
-    console.log('Cuentas de Instagram visibles:', accts.length, '| coincide con @' + want + ':', mine ? 'sí' : 'no');
-    ig = (mine || accts[0])?.id;
-    if (!ig) throw new Error('No encontré una cuenta de Instagram profesional vinculada a una página.');
+    ig = mine?.id;
+    if (!ig) throw new Error('No encontré esa cuenta de Instagram entre las visibles.');
   }
   console.log('Cuenta de Instagram encontrada.');
   const media = await graphAll(`${ig}/media`, { fields: 'id,caption,media_type,media_product_type,permalink,timestamp,like_count,comments_count', limit: '50' });
@@ -68,7 +66,7 @@ async function organic() {
     const formato = m.media_product_type === 'REELS' ? 'Reel' : m.media_type === 'CAROUSEL_ALBUM' ? 'Carrusel' : 'Post';
     docs['ig-' + m.id] = {
       metrics: { alcance: reach, likes: num(m.like_count), comentarios: num(m.comments_count), guardados: saved, compartidos: shares },
-      base: { fecha: day(m.timestamp), formato, titulo: (m.caption || 'Sin texto').split('\n')[0].slice(0, 90), url: m.permalink, meta: true }
+      base: { fecha: day(m.timestamp), formato, titulo: (m.caption || 'Sin texto').split('\n')[0].slice(0, 90), url: m.permalink, meta: true, cuenta: want }
     };
   }
   return docs;
@@ -113,20 +111,20 @@ function upsert(col, incoming) {
   for (const [id, { metrics, base }] of Object.entries(incoming)) col[id] = col[id] ? { ...col[id], ...metrics } : { ...base, ...metrics, creado: Date.now() };
 }
 
-try {
-  const p = await graphAll('me/accounts', { fields: 'id,instagram_business_account{id}' });
-  const a = await graphAll('me/adaccounts', { fields: 'id' });
-  console.log('Páginas visibles:', p.length, '| con Instagram:', p.filter(x => x.instagram_business_account).length, '| cuentas publicitarias visibles:', a.length);
-} catch (e) { console.warn('Diagnóstico:', e.message); }
-
-const results = await Promise.allSettled([organic(), ads()]);
-const [org, adv] = results;
-results.forEach((r, i) => { if (r.status === 'rejected') console.error(['Orgánico', 'Ads'][i] + ':', r.reason.message); });
-if (results.every(r => r.status === 'rejected')) process.exit(1);
+const { data: d0 } = await readData();
+const cuentas = (d0.config?.cuentas?.lista || [process.env.IG_USERNAME || 'ramaruiz.ads']).map(x => String(x).toLowerCase());
+const settle = p => p.then(value => ({ status: 'fulfilled', value }), reason => ({ status: 'rejected', reason }));
+const orgs = [];
+for (const c of cuentas) orgs.push(await settle(organic(c)));
+const adv = await settle(ads());
+const todos = [...orgs, adv];
+todos.forEach((r, i) => { if (r.status === 'rejected') console.error((i < orgs.length ? `Orgánico (cuenta ${i + 1} de ${orgs.length})` : 'Ads') + ':', r.reason.message); });
+if (todos.every(r => r.status === 'rejected')) process.exit(1);
+const org = { value: Object.assign({}, ...orgs.filter(r => r.status === 'fulfilled').map(r => r.value)) };
 
 for (let intento = 0; intento < 3; intento++) {
   const { data, sha, salt } = await readData();
-  if (org.status === 'fulfilled') upsert(data.posts, org.value);
+  upsert(data.posts, org.value);
   if (adv.status === 'fulfilled') upsert(data.camps, adv.value);
   const body = { message: 'Sincroniza métricas de Meta', content: Buffer.from(await encrypt(data, salt)).toString('base64'), ...(sha ? { sha } : {}) };
   const r = await gh(GH, { method: 'PUT', body: JSON.stringify(body) });

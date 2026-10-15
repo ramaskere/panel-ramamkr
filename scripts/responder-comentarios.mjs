@@ -70,11 +70,15 @@ const auto = !!data.config?.auto?.activo;
 const recursos = Object.entries(data.recursos || {}).map(([id, r]) => ({ id, ...r })).filter(r => r.estado === 'Activo' && r.palabra && r.dm);
 console.log(`Modo: ${auto ? 'automático' : 'prueba (no envía)'} | recursos activos: ${recursos.length}`);
 if (!recursos.length) process.exit(0);
+const cuentas = (data.config?.cuentas?.lista || [process.env.IG_USERNAME || 'ramaruiz.ads']).map(x => String(x).toLowerCase());
+const cuentaDe = r => String(r.cuenta || cuentas[0]).toLowerCase();
 
-const want = (process.env.IG_USERNAME || 'ramaruiz.ads').toLowerCase();
+async function procesar(want) {
+const recs = recursos.filter(r => cuentaDe(r) === want);
+if (!recs.length) { console.log('Sin recursos activos en esta cuenta.'); return; }
 const pages = (await g('me/accounts', 'GET', { fields: 'id,access_token,instagram_business_account{id,username}' })).j.data || [];
 const page = pages.find(p => (p.instagram_business_account?.username || '').toLowerCase() === want);
-if (!page) throw new Error('No encontré la página vinculada al Instagram.');
+if (!page) { console.log('No encontré la página vinculada a esta cuenta.'); return; }
 const tk = page.access_token || META_TOKEN, ig = page.instagram_business_account.id;
 const own0 = new Set([ig, page.id]);
 async function enviar(recipient, text) {
@@ -96,7 +100,7 @@ for (const m of media) {
   for (const x of c.j.data || []) {
     leidos++;
     if (atendidos[x.id] || (x.username || '').toLowerCase() === want || Date.now() - new Date(x.timestamp) > 7 * DIA) continue;
-    const rec = recursos.find(r => coincide(r, x.text) && (!r.post || r.post === 'post:ig-' + m.id));
+    const rec = recs.find(r => coincide(r, x.text) && (!r.post || r.post === 'post:ig-' + m.id));
     if (!rec) continue;
     coinciden++;
     if (!auto) continue;
@@ -120,3 +124,6 @@ for (const m of media) {
   }
 }
 console.log(`Comentarios leídos: ${leidos} | con palabra clave: ${coinciden} | respuestas enviadas: ${enviados}${bloqueados ? ' | sin enviar por [LINK] pendiente: ' + bloqueados : ''}`);
+}
+let n = 0;
+for (const c of cuentas) { console.log(`Cuenta ${++n} de ${cuentas.length}`); await procesar(c).catch(e => console.log('Error:', e.message)); }

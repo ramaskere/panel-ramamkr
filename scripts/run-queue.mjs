@@ -30,7 +30,7 @@ for (const it of due) {
   if (atrasoH > MAX_ATRASO_H) { it.estado = 'vencido'; sha = await write(items, sha, 'Cola: vencido ' + it.id); console.log('Vencido:', it.id); continue; }
   it.estado = 'publicando'; sha = await write(items, sha, 'Cola: publicando ' + it.id); // evita duplicados si algo se corta
   try {
-    it.link = await publish(api, it.imagenes, it.caption);
+    it.link = await publish(api, it.imagenes, it.caption, it.cuenta); // sin cuenta: la principal
     it.estado = 'publicado'; it.publicado = new Date().toISOString();
     console.log('Publicado:', it.id, it.link);
   } catch (e) {

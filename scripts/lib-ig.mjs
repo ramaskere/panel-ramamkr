@@ -9,9 +9,9 @@ export function makeApi(token) {
     return j;
   };
 }
-export async function igId(api) {
-  if (process.env.IG_USER_ID) return process.env.IG_USER_ID;
-  const want = (process.env.IG_USERNAME || 'ramaruiz.ads').toLowerCase();
+export async function igId(api, usuario) {
+  if (!usuario && process.env.IG_USER_ID) return process.env.IG_USER_ID;
+  const want = (usuario || process.env.IG_USERNAME || 'ramaruiz.ads').toLowerCase();
   const pages = (await api('me/accounts', 'GET', { fields: 'instagram_business_account{id,username}' })).data || [];
   const mine = pages.map(p => p.instagram_business_account).filter(Boolean).find(a => (a.username || '').toLowerCase() === want);
   if (!mine) throw new Error('No encontré @' + want + ' entre las cuentas visibles.');
@@ -27,11 +27,11 @@ async function ready(api, id) {
   throw new Error('Instagram tardó demasiado en procesar el contenido.');
 }
 // Publica 1 imagen (post) o 2 a 10 (carrusel). Devuelve el link del post.
-export async function publish(api, urls, caption) {
+export async function publish(api, urls, caption, cuenta) {
   if (!urls.length) throw new Error('Falta al menos una URL de imagen.');
   if (urls.length > 10) throw new Error('Instagram admite hasta 10 imágenes por carrusel.');
   if (urls.some(u => !u.startsWith('https://'))) throw new Error('Todas las URLs deben empezar con https://');
-  const ig = await igId(api);
+  const ig = await igId(api, cuenta);
   let creation;
   if (urls.length === 1) creation = (await api(`${ig}/media`, 'POST', { image_url: urls[0], caption })).id;
   else {

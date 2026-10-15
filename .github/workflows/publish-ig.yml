@@ -8,6 +8,10 @@ on:
       caption:
         description: 'Texto del post'
         required: true
+      cuenta:
+        description: 'Usuario de Instagram donde publicar (sin @)'
+        required: true
+        default: 'ramaruiz.ads'
       confirmar:
         description: 'Escribe PUBLICAR para confirmar'
         required: true
@@ -24,5 +28,6 @@ jobs:
         env:
           META_TOKEN: ${{ secrets.TOKEN_ORG_ADS }}
           IMAGE_URLS: ${{ inputs.image_urls }}
+          CUENTA: ${{ inputs.cuenta }}
           CAPTION: ${{ inputs.caption }}
           IG_USER_ID: ${{ vars.IG_USER_ID }}

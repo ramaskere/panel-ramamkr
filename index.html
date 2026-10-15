@@ -29,6 +29,7 @@
 body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 14px; line-height: 1.5; padding-inline: 16px; padding-block: 0 56px; }
 .tools { display: flex; align-items: center; gap: 10px; }
 #sync { font-size: 12px; color: var(--muted); }
+#cuenta-sel { background: var(--raise); border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; font-weight: 600; max-width: 190px; }
 #sync.bad { color: var(--bad); }
 .setup { max-width: 460px; display: flex; flex-direction: column; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
 .setup p { margin: 0; color: var(--muted); }
@@ -148,7 +149,7 @@ select.stage { background: var(--raise); border: 1px solid var(--line); border-r
   <header>
     <div class="bar">
       <div class="brand">Panel <span>RamaMKR</span></div>
-      <div class="tools"><span id="sync" role="status"></span><button class="ghost" id="cfg-btn" type="button">Conexión</button><button class="primary" id="add-btn" type="button">+ Nuevo lead</button></div>
+      <div class="tools"><select id="cuenta-sel" aria-label="Cuenta de Instagram" hidden></select><span id="sync" role="status"></span><button class="ghost" id="cfg-btn" type="button">Conexión</button><button class="primary" id="add-btn" type="button">+ Nuevo lead</button></div>
     </div>
     <nav role="tablist" id="tabs"></nav>
   </header>
@@ -162,6 +163,11 @@ const STAGE_LABEL = Object.fromEntries(STAGES);
 const TABS = [['resumen','Resumen','+ Nuevo lead','leads'],['calendario','Calendario','+ Nuevo lead','leads'],['leads','Leads','+ Nuevo lead','leads'],['organico','Orgánico','+ Nuevo contenido','posts'],['campanas','Campañas','+ Nueva campaña','camps'],['recursos','Recursos','+ Nuevo recurso','recursos']];
 const COLL = { leads:'leads', posts:'posts', camps:'camps', recursos:'recursos', config:'config' };
 const S = { posts: [], camps: [], leads: [], recursos: [], config: [] };
+let LISTA = [], cuentaSel = 'todas';
+try { cuentaSel = localStorage.getItem('panel-cuenta') || 'todas'; } catch (e) {}
+const cuentaDe = x => String((x && x.cuenta) || LISTA[0] || '').toLowerCase();
+const okCuenta = x => cuentaSel === 'todas' || !LISTA.length || cuentaDe(x) === cuentaSel;
+const cuentaField = () => LISTA.length > 1 ? [['cuenta', 'Cuenta', 'select', { full: 1, opts: LISTA.map(u => [u, '@' + u]), def: cuentaSel !== 'todas' ? cuentaSel : LISTA[0] }]] : [];
 let db = null, tab = 'resumen', leadFilter = 'todos', dbError = '', needSetup = false;
 const CFG_KEY = 'panel-ramamkr-conexion';
 const cfg = { repo: 'ramaskere/panel-ramamkr', file: 'datos.enc.json', pass: '', token: '' };
@@ -288,11 +294,12 @@ function calItems() {
   const diaDe = d => d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();
   const postDias = new Set(S.posts.filter(p => p.fecha).map(p => diaDe(new Date(p.fecha + 'T12:00:00'))));
   for (const c of cola) {
+    if (!okCuenta(c)) continue;
     const d = new Date(c.fecha); if (isNaN(d)) continue;
     if (c.estado === 'publicado' && postDias.has(diaDe(d))) continue; // ya aparece desde Instagram
-    items.push({ date: d, hora: true, estado: c.estado || 'pendiente', titulo: (c.caption || '').split('\n')[0].slice(0, 70), cola: c });
+    items.push({ date: d, hora: true, estado: c.estado || 'pendiente', titulo: (c.caption || '').split('\n')[0].slice(0, 70), cola: c, cuenta: cuentaDe(c) });
   }
-  for (const p of S.posts) if (p.fecha) items.push({ date: new Date(p.fecha + 'T12:00:00'), hora: false, estado: 'publicado', titulo: p.titulo || 'Sin título', post: p });
+  for (const p of S.posts) if (p.fecha) items.push({ date: new Date(p.fecha + 'T12:00:00'), hora: false, estado: 'publicado', titulo: p.titulo || 'Sin título', post: p, cuenta: cuentaDe(p) });
   return items.sort((a, b) => a.date - b.date);
 }
 function viewCalendario() {
@@ -305,7 +312,7 @@ function viewCalendario() {
   let cells = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(d => `<div class="cal-dow">${d}</div>`).join('');
   for (let i = 0; i < offset; i++) cells += '<div class="cal-day off"></div>';
   for (let d = 1; d <= dias; d++) cells += `<div class="cal-day${hoy.getFullYear() === y && hoy.getMonth() === m && hoy.getDate() === d ? ' today' : ''}"><span class="cal-n">${d}</span>${(porDia[d] || []).map(chip).join('')}</div>`;
-  const rows = calList.map((it, i) => `<tr class="click" data-cal="${i}"><td class="dim">${it.date.toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short' })}${it.hora ? ' · ' + esc(hora(it)) : ''}</td><td class="title">${esc(it.titulo)}<div class="sub">${it.cola ? (it.cola.imagenes || []).length + ' imágenes' : esc(it.post.formato || '')}</div></td><td><span class="pill ${esc(it.estado)}">${esc(ESTADO_COLA[it.estado] || it.estado)}</span></td></tr>`);
+  const rows = calList.map((it, i) => `<tr class="click" data-cal="${i}"><td class="dim">${it.date.toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short' })}${it.hora ? ' · ' + esc(hora(it)) : ''}</td><td class="title">${esc(it.titulo)}<div class="sub">${it.cola ? (it.cola.imagenes || []).length + ' imágenes' : esc(it.post.formato || '')}${LISTA.length > 1 ? ' · @' + esc(it.cuenta) : ''}</div></td><td><span class="pill ${esc(it.estado)}">${esc(ESTADO_COLA[it.estado] || it.estado)}</span></td></tr>`);
   const prog = calList.filter(it => it.estado === 'pendiente').length;
   return `<section class="sec"><div class="cal-head"><button class="ghost" data-calnav="-1" aria-label="Mes anterior">←</button><h2>${calMonth.toLocaleDateString('es', { month: 'long', year: 'numeric' })}</h2><button class="ghost" data-calnav="1" aria-label="Mes siguiente">→</button><button class="ghost" data-calnav="0">Hoy</button><span class="hint">${prog} programados este mes</span></div>
     <div class="cal-grid">${cells}</div></section>
@@ -316,7 +323,7 @@ function openCal(i) {
   const c = it.cola, imgs = c ? (c.imagenes || []).slice(0, 5) : [], link = c ? c.link : it.post?.url;
   $('#modal-root').innerHTML = `<div class="overlay" id="overlay"><div class="modal" role="dialog" aria-modal="true" aria-label="Detalle de la publicación">
     <h3>${esc(it.titulo)}</h3>
-    <div class="actions"><span class="pill ${esc(it.estado)}">${esc(ESTADO_COLA[it.estado] || it.estado)}</span><span class="hint">${it.date.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })}${it.hora ? ' · ' + it.date.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) : ''}</span></div>
+    <div class="actions"><span class="pill ${esc(it.estado)}">${esc(ESTADO_COLA[it.estado] || it.estado)}</span><span class="hint">${LISTA.length > 1 ? '@' + esc(it.cuenta) + ' · ' : ''}${it.date.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })}${it.hora ? ' · ' + it.date.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) : ''}</span></div>
     ${imgs.length ? `<div class="thumbs">${imgs.map(u => `<img src="${esc(u)}" alt="" loading="lazy">`).join('')}</div><span class="hint">${c.imagenes.length} imágenes</span>` : ''}
     ${c ? `<div class="cap">${esc(c.caption)}</div>` : `<div class="hint">${esc(it.post.formato || '')} publicado en Instagram${it.post.alcance ? ' · alcance ' + int(it.post.alcance) : ''}</div>`}
     ${c?.error ? `<div class="err">${esc(c.error)}</div>` : ''}
@@ -347,6 +354,10 @@ function render() {
   $('#tabs').innerHTML = TABS.map(([k, v]) => `<button role="tab" data-tab="${k}" aria-selected="${tab === k}">${v}</button>`).join('');
   const cur = TABS.find(t => t[0] === tab);
   $('#add-btn').textContent = cur[2]; $('#add-btn').dataset.new = cur[3];
+  const cs = $('#cuenta-sel');
+  cs.hidden = needSetup || LISTA.length < 2;
+  cs.innerHTML = '<option value="todas">Todas las cuentas</option>' + LISTA.map(u => `<option value="${esc(u)}">@${esc(u)}</option>`).join('');
+  cs.value = cuentaSel;
   $('#add-btn').hidden = needSetup;
   if (needSetup) { $('#view').innerHTML = setupHtml(); return; }
   $('#view').innerHTML = (dbError ? `<div class="empty"><h3>No se pudo sincronizar</h3><p>${esc(dbError)}</p>${db ? '' : '<button class="primary" id="retry">Reintentar</button>'}</div>` : '') + VIEWS[tab]();
@@ -362,14 +373,14 @@ function setupHtml() {
 
 /* ---------- formularios ---------- */
 const FORMS = {
-  posts: { title: 'contenido', fields: () => [
+  posts: { title: 'contenido', fields: () => [...cuentaField(), 
     ['fecha', 'Fecha de publicación', 'date', { def: today() }], ['formato', 'Formato', 'select', { opts: ['Reel', 'Story', 'Carrusel', 'Post', 'Live'] }],
     ['titulo', 'Título o tema', 'text', { full: 1, ph: 'Ej: 3 errores al lanzar un curso' }], ['url', 'Link (opcional)', 'text', { full: 1 }],
     ['alcance', 'Alcance', 'number'], ['likes', 'Likes', 'number'], ['comentarios', 'Comentarios', 'number'], ['guardados', 'Guardados', 'number'], ['compartidos', 'Compartidos', 'number']] },
-  camps: { title: 'campaña', fields: () => [
+  camps: { title: 'campaña', fields: () => [...cuentaField(), 
     ['nombre', 'Nombre', 'text', { full: 1, ph: 'Ej: Ventas con Ads, mensajes' }], ['estado', 'Estado', 'select', { opts: ['Activa', 'Pausada', 'Finalizada'] }], ['objetivo', 'Objetivo', 'select', { opts: ['Mensajes', 'Leads', 'Ventas', 'Tráfico', 'Alcance'] }],
     ['inicio', 'Inicio', 'date', { def: today() }], ['gasto', 'Gasto total (US$)', 'number'], ['impresiones', 'Impresiones', 'number'], ['clics', 'Clics', 'number']] },
-  recursos: { title: 'recurso', fields: () => [
+  recursos: { title: 'recurso', fields: () => [...cuentaField(), 
     ['nombre', 'Nombre del recurso', 'text', { full: 1, ph: 'Ej: 3 razones por las que tu anuncio no vendió' }],
     ['palabra', 'Palabras clave (separadas por coma)', 'text', { ph: 'Ej: guía, guia, quiero la guía' }], ['estado', 'Estado', 'select', { opts: ['Activo', 'Pausado'] }],
     ['post', 'Se activa en', 'select', { full: 1, grouped: postOptions() }],
@@ -377,7 +388,7 @@ const FORMS = {
     ['saludos', 'Saludos del mensaje privado (uno por línea, se elige uno al azar)', 'textarea', { full: 1 }],
     ['pregunta', 'Pregunta al final del mensaje (opcional, la respondes tú a mano)', 'text', { full: 1, ph: 'Ej: ¿Ya pautaste o estás pensando en empezar?' }],
     ['dm', 'Mensaje directo con el recurso (se envía de una sola vez)', 'textarea', { full: 1 }]] },
-  leads: { title: 'lead', fields: () => [
+  leads: { title: 'lead', fields: () => [...cuentaField(), 
     ['nombre', 'Nombre', 'text', { full: 1 }], ['usuario', 'Usuario de IG o contacto', 'text'], ['fecha', 'Fecha de entrada', 'date', { def: today() }],
     ['origen', 'De dónde vino', 'select', { full: 1, grouped: originOptions() }], ['etapa', 'Etapa', 'select', { opts: STAGES }], ['monto', 'Monto de la venta (US$)', 'number'],
     ['agendado', 'Llegó a agendar una llamada', 'check', { full: 1 }], ['notas', 'Notas', 'textarea', { full: 1 }]] }
@@ -477,6 +488,11 @@ document.addEventListener('click', async e => {
   } catch (err) { dbError = err.message || err.code || 'Error desconocido'; render(); }
 });
 document.addEventListener('click', e => { if (e.target.closest('select.stage')) e.stopPropagation(); }, true);
+document.addEventListener('change', e => {
+  if (e.target.id !== 'cuenta-sel') return;
+  cuentaSel = e.target.value; try { localStorage.setItem('panel-cuenta', cuentaSel); } catch (x) {}
+  publish(); render();
+});
 document.addEventListener('change', async e => {
   const s = e.target.closest('select.stage'); if (!s || !db) return;
   const etapa = s.value, l = S.leads.find(x => x.id === s.dataset.stage); if (!l) return;
@@ -522,7 +538,13 @@ async function load() {
   remote = { data: { posts: {}, camps: {}, leads: {}, ...data }, sha: j.sha };
 }
 function publish() {
-  for (const c of ['posts', 'camps', 'leads', 'recursos', 'config']) S[c] = Object.entries(remote.data[c] || {}).map(([id, v]) => ({ id, ...v }));
+  LISTA = ((remote.data.config || {}).cuentas || {}).lista || [];
+  LISTA = LISTA.map(x => String(x).toLowerCase());
+  if (cuentaSel !== 'todas' && !LISTA.includes(cuentaSel)) cuentaSel = 'todas';
+  for (const c of ['posts', 'camps', 'leads', 'recursos', 'config']) {
+    const todos = Object.entries(remote.data[c] || {}).map(([id, v]) => ({ id, ...v }));
+    S[c] = c === 'config' ? todos : todos.filter(okCuenta);
+  }
 }
 const applyOp = (d, o) => { d[o.c] ||= {}; if (o.t === 'set') d[o.c][o.id] = o.d; else delete d[o.c][o.id]; };
 function mutate(o) {
