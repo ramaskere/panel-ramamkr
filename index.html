@@ -338,9 +338,17 @@ async function loadCola() {
     if (r.ok) { const j = await r.json(); cola = JSON.parse(b64utf8(j.content)); }
   } catch (e) {}
 }
-const autoOn = () => !!S.config.find(c => c.id === 'auto')?.activo;
+const autoDoc = () => S.config.find(c => c.id === 'auto') || {};
+const autoPorCuenta = () => LISTA.length > 1 && cuentaSel !== 'todas';
+const autoOn = () => {
+  const a = autoDoc();
+  if (autoPorCuenta() && a.cuentas && Object.prototype.hasOwnProperty.call(a.cuentas, cuentaSel)) return !!a.cuentas[cuentaSel];
+  return !!a.activo;
+};
 function viewRecursos() {
-  const head = `<div class="sec-head"><h2>Recursos</h2><button class="ghost" id="toggle-auto" aria-pressed="${autoOn()}">Respuestas automáticas: ${autoOn() ? 'encendidas' : 'apagadas'}</button></div>`;
+  const puedeToggle = !LISTA.length || LISTA.length === 1 || cuentaSel !== 'todas';
+  const etiqueta = autoPorCuenta() ? ` de @${esc(cuentaSel)}` : '';
+  const head = `<div class="sec-head"><h2>Recursos</h2><button class="ghost" id="toggle-auto" aria-pressed="${autoOn()}" ${puedeToggle ? '' : 'disabled'}>Respuestas automáticas${etiqueta}: ${autoOn() ? 'encendidas' : 'apagadas'}</button>${puedeToggle ? '' : '<span class="hint">Elegí una cuenta para activarlas o apagarlas</span>'}</div>`;
   if (!S.recursos.length) return `<section class="sec">${head}<div class="empty"><h3>Todavía no hay recursos</h3><p>Un recurso es lo que recibe una persona cuando comenta una palabra clave en tu contenido. Por ejemplo, "impulsé" entrega las 3 razones por las que su anuncio no vendió. Crea el primero y queda guardado, cifrado con tu contraseña.</p><div class="actions"><button class="primary" data-new="recursos">+ Nuevo recurso</button><button class="ghost" id="seed-lm">Cargar mis 3 lead magnets (borrador)</button></div></div></section>`;
   const rows = S.recursos.map(r => {
     const post = r.post ? S.posts.find(p => 'post:' + p.id === r.post) : null, st = byOrigin('rec:' + r.id);
@@ -482,7 +490,10 @@ document.addEventListener('click', async e => {
     else if (t.dataset.edit) { const [k, id] = t.dataset.edit.split(':'); openForm(k, id); }
     else if (t.dataset.filter) { leadFilter = t.dataset.filter; render(); }
     else if (t.id === 'seed-lm') { t.disabled = true; await seedLM(); }
-    else if (t.id === 'toggle-auto') { await db.collection('config').doc('auto').set({ activo: !autoOn() }); }
+    else if (t.id === 'toggle-auto' && !t.disabled) {
+      if (autoPorCuenta()) await db.collection('config').doc('auto').update({ cuentas: { ...(autoDoc().cuentas || {}), [cuentaSel]: !autoOn() } });
+      else await db.collection('config').doc('auto').update({ activo: !autoOn() });
+    }
     else if (t.id === 'seed') { t.disabled = true; await seed(); }
     else if (t.id === 'unseed') { t.disabled = true; await unseed(); }
   } catch (err) { dbError = err.message || err.code || 'Error desconocido'; render(); }

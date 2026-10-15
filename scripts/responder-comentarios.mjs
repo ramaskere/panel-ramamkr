@@ -66,15 +66,23 @@ const coincide = (rec, texto) => {
 };
 
 const { data } = await load();
-const auto = !!data.config?.auto?.activo;
+// El interruptor es por cuenta (data.config.auto.cuentas[cuenta]); si esa cuenta no tiene un valor propio
+// todavía, se usa data.config.auto.activo (el interruptor global de antes) como valor de respaldo.
+const autoFor = cuenta => {
+  const a = data.config?.auto || {};
+  if (a.cuentas && Object.prototype.hasOwnProperty.call(a.cuentas, cuenta)) return !!a.cuentas[cuenta];
+  return !!a.activo;
+};
 const recursos = Object.entries(data.recursos || {}).map(([id, r]) => ({ id, ...r })).filter(r => r.estado === 'Activo' && r.palabra && r.dm);
-console.log(`Modo: ${auto ? 'automático' : 'prueba (no envía)'} | recursos activos: ${recursos.length}`);
+console.log(`Recursos activos: ${recursos.length}`);
 if (!recursos.length) process.exit(0);
 const cuentas = (data.config?.cuentas?.lista || [process.env.IG_USERNAME || 'ramaruiz.ads']).map(x => String(x).toLowerCase());
 const cuentaDe = r => String(r.cuenta || cuentas[0]).toLowerCase();
 
 async function procesar(want) {
+const auto = autoFor(want);
 const recs = recursos.filter(r => cuentaDe(r) === want);
+console.log(`Modo: ${auto ? 'automático' : 'prueba (no envía)'} | recursos de esta cuenta: ${recs.length}`);
 if (!recs.length) { console.log('Sin recursos activos en esta cuenta.'); return; }
 const pages = (await g('me/accounts', 'GET', { fields: 'id,access_token,instagram_business_account{id,username}' })).j.data || [];
 const page = pages.find(p => (p.instagram_business_account?.username || '').toLowerCase() === want);
