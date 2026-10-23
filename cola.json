@@ -69,5 +69,75 @@
     "estado": "publicado",
     "link": "https://www.instagram.com/p/DexgWoelUhf/",
     "publicado": "2026-10-21T22:42:13.968Z"
+  },
+  {
+    "id": "2026-10-26-cambia-tu-iphone",
+    "fecha": "2026-10-26T19:00:00-03:00",
+    "imagenes": [
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-26-cambia-tu-iphone/01.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-26-cambia-tu-iphone/02.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-26-cambia-tu-iphone/03.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-26-cambia-tu-iphone/04.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-26-cambia-tu-iphone/05.jpg"
+    ],
+    "caption": "¿Vas a cambiar tu iPhone este mes? Fijate esto antes.\n\nLa mayoría le compra a un desconocido por Instagram o Marketplace y se entera después que el iCloud estaba bloqueado o que la batería no aguanta nada. Y cuando falla, no hay a quién reclamarle.\n\nAcá cada iPhone sale revisado, con funda, cargador completo, vidrio templado y garantía por escrito.\n\nComentá \"iphone\" y te mandamos los modelos disponibles y las cuotas.",
+    "cuenta": "goapple.sj",
+    "estado": "pendiente"
+  },
+  {
+    "id": "2026-10-27-revisa-antes-de-comprar",
+    "fecha": "2026-10-27T19:00:00-03:00",
+    "imagenes": [
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-27-revisa-antes-de-comprar/01.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-27-revisa-antes-de-comprar/02.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-27-revisa-antes-de-comprar/03.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-27-revisa-antes-de-comprar/04.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-27-revisa-antes-de-comprar/05.jpg"
+    ],
+    "caption": "Esto es lo que miramos antes de vender cualquier iPhone, y casi nadie lo hace antes de comprar uno usado.\n\nLa gente se fija en el precio y en la memoria, y listo. No revisa la batería, no revisa si el iCloud está limpio, no revisa si la pantalla es original. Por eso después aparecen los problemas.\n\nAntes de comprar el próximo, revisá estas 3 cosas vos mismo: salud de batería, iCloud sin cuenta asociada, pantalla original. O directamente comprale a alguien que ya te lo entrega revisado.\n\nComentá \"revisar\" y te decimos gratis cómo revisar el que estás por comprar, sea a nosotros o a cualquier otro.",
+    "cuenta": "goapple.sj",
+    "estado": "pendiente"
+  },
+  {
+    "id": "2026-10-28-cuotas",
+    "fecha": "2026-10-28T19:00:00-03:00",
+    "imagenes": [
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-28-cuotas/01.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-28-cuotas/02.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-28-cuotas/03.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-28-cuotas/04.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-28-cuotas/05.jpg"
+    ],
+    "caption": "Si pensás que financiar un iPhone es complicado, mirá esto.\n\nMucha gente se queda con el iPhone viejo porque piensa que para cambiarlo hay que tener todo el dinero de una sola vez, y entre que no le entra el presupuesto y no confía en financiar con cualquiera, termina postergando el cambio un año más.\n\nNo necesitás juntar todo de una. Podés financiar el iPhone con cuotas que se ajustan a lo que podés pagar por mes, sin vueltas raras.\n\nAsí se vendió la mayoría de los más de 100 iPhone que salieron de acá.\n\nEscribinos \"cuotas\" y te armamos un plan a tu medida según el modelo que quieras.",
+    "cuenta": "goapple.sj",
+    "estado": "pendiente"
+  },
+  {
+    "id": "2026-10-29-cambio",
+    "fecha": "2026-10-29T19:00:00-03:00",
+    "imagenes": [
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-29-cambio/01.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-29-cambio/02.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-29-cambio/03.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-29-cambio/04.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-29-cambio/05.jpg"
+    ],
+    "caption": "Tu iPhone actual vale más de lo que pensás.\n\nLa gente se queda con el iPhone viejo guardado en un cajón porque no sabe cuánto vale, o tiene miedo de que se lo tasen mal y termine perdiendo dinero en el cambio.\n\nTraé tu iPhone actual, te lo tasamos ahí mismo y usás ese valor como parte de pago del nuevo. Sin esperar una respuesta por DM tres días después.\n\nAsí hicimos la mayoría de los más de 100 cambios que ya cerramos en San Juan.\n\nEscribinos \"cambio\" con el modelo que tenés y te decimos en el momento cuánto te lo tomamos.",
+    "cuenta": "goapple.sj",
+    "estado": "pendiente"
+  },
+  {
+    "id": "2026-10-30-iphone-trucho",
+    "fecha": "2026-10-30T19:00:00-03:00",
+    "imagenes": [
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-30-iphone-trucho/01.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-30-iphone-trucho/02.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-30-iphone-trucho/03.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-30-iphone-trucho/04.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-30-iphone-trucho/05.jpg"
+    ],
+    "caption": "Hay iPhone en venta que ni son iPhone. Y a simple vista, no se nota.\n\nVen el logo de Apple y la pantalla prendida, y ya está. Pero hay clones que corren un Android disfrazado de iOS, con cámaras y procesadores mucho más débiles que uno real. Por fuera, casi no se diferencian.\n\n3 formas rápidas de detectar un clon:\n1. Ajustes → General → Información. Si no existe, o está mal traducido, sospechá.\n2. Buscá con Siri o Spotlight. Un iPhone real los tiene nativos, sin instalar nada.\n3. Fijate el puerto y el peso. Los clones suelen pesar distinto y algunos todavía traen micro-USB.\n\nRevisamos cada iPhone antes de venderlo. Por eso ya vendimos más de 100, todos originales.\n\nComentá y te ayudamos a confirmar si el que te ofrecen es original.",
+    "cuenta": "goapple.sj",
+    "estado": "pendiente"
   }
 ]
