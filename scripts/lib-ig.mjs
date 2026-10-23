@@ -44,3 +44,12 @@ export async function publish(api, urls, caption, cuenta) {
   const info = await api(pub.id, 'GET', { fields: 'permalink' }).catch(() => ({}));
   return info.permalink || '';
 }
+// Publica una historia: una sola imagen, sin caption ni carrusel.
+export async function publishStory(api, url, cuenta) {
+  if (!url) throw new Error('Falta la URL de la imagen.');
+  if (!url.startsWith('https://')) throw new Error('La URL debe empezar con https://');
+  const ig = await igId(api, cuenta);
+  const creation = (await api(`${ig}/media`, 'POST', { image_url: url, media_type: 'STORIES' })).id;
+  await ready(api, creation);
+  await api(`${ig}/media_publish`, 'POST', { creation_id: creation });
+}
