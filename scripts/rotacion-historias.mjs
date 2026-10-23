@@ -1,4 +1,4 @@
-// Publica una historia por día por cada rotación en rotaciones.json (loop infinito sobre su lista de imágenes).
+// Publica TODAS las imágenes de cada rotación de rotaciones.json, una vez por día, todos los días.
 // Corre desde el workflow "Historias diarias" (cron cada 15 min). No toca cola.json ni datos.enc.json.
 import { makeApi, publishStory } from './lib-ig.mjs';
 const { META_TOKEN, GITHUB_TOKEN, GITHUB_REPOSITORY } = process.env;
@@ -32,13 +32,11 @@ for (const [id, r] of Object.entries(data)) {
   if (!r.imagenes?.length) continue;
   if (r.ultima === hoyArt) continue; // ya publicó hoy
   if (horaArt < (r.hora || '08:00')) continue; // todavía no es la hora
-  const i = (r.indice || 0) % r.imagenes.length;
   try {
-    await publishStory(api, r.imagenes[i], r.cuenta);
-    r.indice = (i + 1) % r.imagenes.length;
+    for (const url of r.imagenes) await publishStory(api, url, r.cuenta);
     r.ultima = hoyArt;
     cambios++;
-    console.log('Historia publicada:', id);
+    console.log('Historias publicadas:', id, '(' + r.imagenes.length + ')');
   } catch (e) {
     console.error('Error en', id + ':', e.message);
   }
