@@ -1,5 +1,5 @@
 // Publica lo que esté en cola.json y ya haya llegado a su hora. Cada pieza fue aprobada por Rama al encolarla.
-import { makeApi, publish } from './lib-ig.mjs';
+import { makeApi, publish, publishStory } from './lib-ig.mjs';
 const { META_TOKEN, GITHUB_TOKEN, GITHUB_REPOSITORY } = process.env;
 for (const [k, v] of Object.entries({ META_TOKEN, GITHUB_TOKEN, GITHUB_REPOSITORY })) if (!v) throw new Error('Falta la variable ' + k);
 const URL_Q = `https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/cola.json`;
@@ -30,9 +30,10 @@ for (const it of due) {
   if (atrasoH > MAX_ATRASO_H) { it.estado = 'vencido'; sha = await write(items, sha, 'Cola: vencido ' + it.id); console.log('Vencido:', it.id); continue; }
   it.estado = 'publicando'; sha = await write(items, sha, 'Cola: publicando ' + it.id); // evita duplicados si algo se corta
   try {
-    it.link = await publish(api, it.imagenes, it.caption, it.cuenta); // sin cuenta: la principal
+    if (it.tipo === 'historia') { await publishStory(api, (it.imagenes || [])[0], it.cuenta); it.link = ''; } // sin cuenta: la principal
+    else it.link = await publish(api, it.imagenes, it.caption, it.cuenta);
     it.estado = 'publicado'; it.publicado = new Date().toISOString();
-    console.log('Publicado:', it.id, it.link);
+    console.log('Publicado:', it.id, it.tipo === 'historia' ? '(historia)' : it.link);
   } catch (e) {
     it.estado = 'error'; it.error = e.message.slice(0, 300);
     console.error('Error en', it.id + ':', it.error);
