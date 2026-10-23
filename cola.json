@@ -69,5 +69,45 @@
     "estado": "publicado",
     "link": "https://www.instagram.com/p/DexgWoelUhf/",
     "publicado": "2026-10-21T22:42:13.968Z"
+  },
+  {
+    "id": "2026-10-23-historia-diaria-goapple",
+    "fecha": "2026-10-23T08:00:00-03:00",
+    "tipo": "historia",
+    "cuenta": "goapple.sj",
+    "imagenes": [
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-23-historia-diaria/01.jpg"
+    ],
+    "estado": "pendiente"
+  },
+  {
+    "id": "2026-10-24-historia-diaria-goapple",
+    "fecha": "2026-10-24T08:00:00-03:00",
+    "tipo": "historia",
+    "cuenta": "goapple.sj",
+    "imagenes": [
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-24-historia-diaria/01.jpg"
+    ],
+    "estado": "pendiente"
+  },
+  {
+    "id": "2026-10-25-historia-diaria-goapple",
+    "fecha": "2026-10-25T08:00:00-03:00",
+    "tipo": "historia",
+    "cuenta": "goapple.sj",
+    "imagenes": [
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-25-historia-diaria/01.jpg"
+    ],
+    "estado": "pendiente"
+  },
+  {
+    "id": "2026-10-26-historia-diaria-goapple",
+    "fecha": "2026-10-26T08:00:00-03:00",
+    "tipo": "historia",
+    "cuenta": "goapple.sj",
+    "imagenes": [
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-26-historia-diaria/01.jpg"
+    ],
+    "estado": "pendiente"
   }
 ]
