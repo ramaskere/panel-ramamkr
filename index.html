@@ -287,8 +287,21 @@ function viewCampanas() {
   return `<section class="sec"><div class="sec-head"><h2>Campañas</h2><span class="hint">${S.camps.length} campañas · ${money(gasto)} invertidos</span></div>${table([['Campaña'], ['Estado'], ['Gasto', 'r'], ['Impresiones', 'r'], ['Clics', 'r'], ['Leads', 'r'], ['Agendas', 'r'], ['Ventas', 'r'], ['Ingresos', 'r'], ['ROAS', 'r']], rows)}</section>`;
 }
 
-let cola = [], calMonth = (() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); })(), calList = [];
+let cola = [], rotaciones = {}, calMonth = (() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); })(), calList = [];
 const ESTADO_COLA = { pendiente: 'Programado', publicando: 'Publicando', publicado: 'Publicado', error: 'Error', vencido: 'Vencido' };
+// Proyecta, solo para mostrar, qué imagen de la rotación toca cada día entre desde y hasta (ambos inclusive).
+// No avanza ni guarda nada: el índice real solo lo mueve el workflow "Historias diarias" al publicar.
+function rotacionFechas(rot, desde, hasta) {
+  const out = [], len = (rot.imagenes || []).length; if (!len) return out;
+  const [hh, mm] = (rot.hora || '08:00').split(':').map(Number);
+  const hoy0 = new Date(); hoy0.setHours(0, 0, 0, 0);
+  const yaHoy = rot.ultima === new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10); // hoy en Argentina (UTC-3 fijo)
+  let idx = rot.indice || 0, cursor = new Date(hoy0);
+  const marcar = (estado, usar) => { const d = new Date(cursor); d.setHours(hh, mm, 0, 0); if (d >= desde && d <= hasta) out.push({ date: d, img: rot.imagenes[usar % len], estado }); };
+  if (yaHoy) { marcar('publicado', idx - 1 + len); cursor.setDate(cursor.getDate() + 1); }
+  while (cursor <= hasta) { marcar('pendiente', idx); idx++; cursor.setDate(cursor.getDate() + 1); }
+  return out;
+}
 function calItems() {
   const items = [];
   const diaDe = d => d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();
@@ -300,6 +313,11 @@ function calItems() {
     items.push({ date: d, hora: true, estado: c.estado || 'pendiente', titulo: (c.caption || '').split('\n')[0].slice(0, 70), cola: c, cuenta: cuentaDe(c) });
   }
   for (const p of S.posts) if (p.fecha) items.push({ date: new Date(p.fecha + 'T12:00:00'), hora: false, estado: 'publicado', titulo: p.titulo || 'Sin título', post: p, cuenta: cuentaDe(p) });
+  const y = calMonth.getFullYear(), m = calMonth.getMonth(), desde = new Date(y, m, 1), hasta = new Date(y, m + 1, 0, 23, 59, 59);
+  for (const [id, r] of Object.entries(rotaciones)) {
+    if (!okCuenta(r)) continue;
+    for (const oc of rotacionFechas(r, desde, hasta)) items.push({ date: oc.date, hora: true, estado: oc.estado, titulo: 'Historia (rotación)', rotacion: { ...r, id, imagen: oc.img }, cuenta: cuentaDe(r) });
+  }
   return items.sort((a, b) => a.date - b.date);
 }
 function viewCalendario() {
@@ -312,7 +330,7 @@ function viewCalendario() {
   let cells = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(d => `<div class="cal-dow">${d}</div>`).join('');
   for (let i = 0; i < offset; i++) cells += '<div class="cal-day off"></div>';
   for (let d = 1; d <= dias; d++) cells += `<div class="cal-day${hoy.getFullYear() === y && hoy.getMonth() === m && hoy.getDate() === d ? ' today' : ''}"><span class="cal-n">${d}</span>${(porDia[d] || []).map(chip).join('')}</div>`;
-  const rows = calList.map((it, i) => `<tr class="click" data-cal="${i}"><td class="dim">${it.date.toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short' })}${it.hora ? ' · ' + esc(hora(it)) : ''}</td><td class="title">${esc(it.titulo)}<div class="sub">${it.cola ? (it.cola.imagenes || []).length + ' imágenes' : esc(it.post.formato || '')}${LISTA.length > 1 ? ' · @' + esc(it.cuenta) : ''}</div></td><td><span class="pill ${esc(it.estado)}">${esc(ESTADO_COLA[it.estado] || it.estado)}</span></td></tr>`);
+  const rows = calList.map((it, i) => `<tr class="click" data-cal="${i}"><td class="dim">${it.date.toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short' })}${it.hora ? ' · ' + esc(hora(it)) : ''}</td><td class="title">${esc(it.titulo)}<div class="sub">${it.cola ? (it.cola.imagenes || []).length + ' imágenes' : it.rotacion ? 'Historia' : esc(it.post.formato || '')}${LISTA.length > 1 ? ' · @' + esc(it.cuenta) : ''}</div></td><td><span class="pill ${esc(it.estado)}">${esc(ESTADO_COLA[it.estado] || it.estado)}</span></td></tr>`);
   const prog = calList.filter(it => it.estado === 'pendiente').length;
   return `<section class="sec"><div class="cal-head"><button class="ghost" data-calnav="-1" aria-label="Mes anterior">←</button><h2>${calMonth.toLocaleDateString('es', { month: 'long', year: 'numeric' })}</h2><button class="ghost" data-calnav="1" aria-label="Mes siguiente">→</button><button class="ghost" data-calnav="0">Hoy</button><span class="hint">${prog} programados este mes</span></div>
     <div class="cal-grid">${cells}</div></section>
@@ -320,12 +338,15 @@ function viewCalendario() {
 }
 function openCal(i) {
   const it = calList[i]; if (!it) return;
-  const c = it.cola, imgs = c ? (c.imagenes || []).slice(0, 5) : [], link = c ? c.link : it.post?.url;
+  const c = it.cola, rot = it.rotacion;
+  const imgs = c ? (c.imagenes || []).slice(0, 5) : rot ? [rot.imagen] : [];
+  const totalImgs = c ? c.imagenes.length : imgs.length;
+  const link = c ? c.link : (it.post?.url || '');
   $('#modal-root').innerHTML = `<div class="overlay" id="overlay"><div class="modal" role="dialog" aria-modal="true" aria-label="Detalle de la publicación">
     <h3>${esc(it.titulo)}</h3>
     <div class="actions"><span class="pill ${esc(it.estado)}">${esc(ESTADO_COLA[it.estado] || it.estado)}</span><span class="hint">${LISTA.length > 1 ? '@' + esc(it.cuenta) + ' · ' : ''}${it.date.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })}${it.hora ? ' · ' + it.date.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) : ''}</span></div>
-    ${imgs.length ? `<div class="thumbs">${imgs.map(u => `<img src="${esc(u)}" alt="" loading="lazy">`).join('')}</div><span class="hint">${c.imagenes.length} imágenes</span>` : ''}
-    ${c ? `<div class="cap">${esc(c.caption)}</div>` : `<div class="hint">${esc(it.post.formato || '')} publicado en Instagram${it.post.alcance ? ' · alcance ' + int(it.post.alcance) : ''}</div>`}
+    ${imgs.length ? `<div class="thumbs">${imgs.map(u => `<img src="${esc(u)}" alt="" loading="lazy">`).join('')}</div><span class="hint">${totalImgs} imagen${totalImgs === 1 ? '' : 'es'}</span>` : ''}
+    ${c ? `<div class="cap">${esc(c.caption)}</div>` : rot ? `<div class="hint">Historia que se repite todos los días a las ${esc(rot.hora || '08:00')}.</div>` : `<div class="hint">${esc(it.post.formato || '')} publicado en Instagram${it.post.alcance ? ' · alcance ' + int(it.post.alcance) : ''}</div>`}
     ${c?.error ? `<div class="err">${esc(c.error)}</div>` : ''}
     ${link ? `<a href="${esc(link)}" target="_blank" rel="noopener">Ver en Instagram</a>` : ''}
     <div class="actions"><button class="ghost" type="button" id="cal-close">Cerrar</button></div></div></div>`;
@@ -336,6 +357,12 @@ async function loadCola() {
   try {
     const r = await fetch(`${GH}${cfg.repo}/contents/cola.json?t=${Date.now()}`, { headers: ghHeaders(), cache: 'no-store' });
     if (r.ok) { const j = await r.json(); cola = JSON.parse(b64utf8(j.content)); }
+  } catch (e) {}
+}
+async function loadRotaciones() {
+  try {
+    const r = await fetch(`${GH}${cfg.repo}/contents/rotaciones.json?t=${Date.now()}`, { headers: ghHeaders(), cache: 'no-store' });
+    if (r.ok) { const j = await r.json(); rotaciones = JSON.parse(b64utf8(j.content)); }
   } catch (e) {}
 }
 const autoDoc = () => S.config.find(c => c.id === 'auto') || {};
@@ -593,6 +620,7 @@ const dbShim = { collection: c => ({ doc: id => { id = id || newId(); return {
 async function init() {
   if (!cfg.pass) { needSetup = true; render(); return; }
   needSetup = false; dbError = ''; setSync('Cargando…'); loadCola().then(() => { if (tab === 'calendario') render(); });
+  loadRotaciones().then(() => { if (tab === 'calendario') render(); });
   try { await load(); publish(); db = dbShim; setSync(cfg.token ? 'Sincronizado' : 'Solo lectura'); }
   catch (e) { needSetup = !!e.auth; dbError = e.message; setSync(e.auth ? '' : 'Sin conexión con GitHub', !e.auth); }
   render();
@@ -609,7 +637,7 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState !== 'visible' || !db || saving || unsaved.length || document.querySelector('#form') || needSetup) return;
-  try { await load(); publish(); await loadCola(); render(); } catch (e) {}
+  try { await load(); publish(); await loadCola(); await loadRotaciones(); render(); } catch (e) {}
 });
 window.addEventListener('beforeunload', e => { if (unsaved.length) { e.preventDefault(); e.returnValue = ''; } });
 try { if (cfg.pass) navigator.storage?.persist?.(); } catch (e) {}
