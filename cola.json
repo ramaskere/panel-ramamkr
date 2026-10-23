@@ -139,5 +139,21 @@
     "caption": "Hay iPhone en venta que ni son iPhone. Y a simple vista, no se nota.\n\nVen el logo de Apple y la pantalla prendida, y ya está. Pero hay clones que corren un Android disfrazado de iOS, con cámaras y procesadores mucho más débiles que uno real. Por fuera, casi no se diferencian.\n\n3 formas rápidas de detectar un clon:\n1. Ajustes → General → Información. Si no existe, o está mal traducido, sospechá.\n2. Buscá con Siri o Spotlight. Un iPhone real los tiene nativos, sin instalar nada.\n3. Fijate el puerto y el peso. Los clones suelen pesar distinto y algunos todavía traen micro-USB.\n\nRevisamos cada iPhone antes de venderlo. Por eso ya vendimos más de 100, todos originales.\n\nComentá y te ayudamos a confirmar si el que te ofrecen es original.",
     "cuenta": "goapple.sj",
     "estado": "pendiente"
+  },
+  {
+    "id": "2026-10-23-funciones-ocultas",
+    "fecha": "2026-10-23T16:00:00-03:00",
+    "imagenes": [
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-23-funciones-ocultas/01.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-23-funciones-ocultas/02.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-23-funciones-ocultas/03.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-23-funciones-ocultas/04.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-23-funciones-ocultas/05.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-23-funciones-ocultas/06.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-23-funciones-ocultas/07.jpg"
+    ],
+    "caption": "Tu iPhone tiene funciones ocultas que capaz nunca activaste. Están ahí, gratis, esperando que las actives.\n\nLa mayoría lo usa con la configuración de fábrica y se pierde funciones que ya están instaladas, sin bajar ninguna app.\n\n3 que casi nadie conoce:\n\n1. Tocá dos veces la parte de atrás del iPhone y abrí la cámara, sacá una captura o bajá el volumen, sin tocar ningún botón. Se activa en Ajustes → Accesibilidad → Tacto → Tocar atrás.\n\n2. La app Notas escanea y firma documentos. Detecta el borde de la hoja, saca la foto derecha y te deja firmar encima, como un escáner de oficina. Notas → nota nueva → ícono de cámara → Escanear documentos.\n\n3. Podés ubicar tu iPhone aunque esté apagado o sin batería (en los modelos iPhone 11 en adelante). Viene activado por defecto, se revisa en Ajustes → tu nombre → Buscar → Buscar iPhone.\n\nEsto es lo primero que les mostramos a los clientes cuando retiran su iPhone de acá. Ya entregamos más de 100.\n\nComentá \"trucos\" y te mandamos más funciones que seguro no sabías que tenías.",
+    "cuenta": "goapple.sj",
+    "estado": "pendiente"
   }
 ]
