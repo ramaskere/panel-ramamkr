@@ -157,5 +157,19 @@
     "estado": "publicado",
     "link": "https://www.instagram.com/p/De2bDDzmGhT/",
     "publicado": "2026-10-23T20:32:00.550Z"
+  },
+  {
+    "id": "2026-10-24-cuotas-sin-tarjeta",
+    "fecha": "2026-10-24T12:00:00-03:00",
+    "imagenes": [
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-24-cuotas-sin-tarjeta/01.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-24-cuotas-sin-tarjeta/02.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-24-cuotas-sin-tarjeta/03.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-24-cuotas-sin-tarjeta/04.jpg",
+      "https://raw.githubusercontent.com/ramaskere/panel-ramamkr/main/posts/2026-10-24-cuotas-sin-tarjeta/05.jpg"
+    ],
+    "caption": "No necesitás tarjeta de crédito para financiar tu iPhone. Con tu DNI alcanza.\n\nMucha gente piensa que si no tiene tarjeta de crédito, no puede financiar nada, y entre que no le entra en la tarjeta y no sabe que hay otra forma, termina pagando todo de una sola vez o postergando el cambio.\n\nPodés financiar tu iPhone solo con tu DNI, sin tarjeta de crédito ni aval. Lo evaluamos en el momento, ahí en el local.\n\nAsí compró buena parte de los más de 100 iPhone que salieron de acá.\n\nEscribinos \"DNI\" y te contamos cómo financiarlo sin tarjeta.",
+    "cuenta": "goapple.sj",
+    "estado": "pendiente"
   }
 ]
