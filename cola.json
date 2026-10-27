@@ -97,7 +97,8 @@
     ],
     "caption": "Esto es lo que miramos antes de vender cualquier iPhone, y casi nadie lo hace antes de comprar uno usado.\n\nLa gente se fija en el precio y en la memoria, y listo. No revisa la batería, no revisa si el iCloud está limpio, no revisa si la pantalla es original. Por eso después aparecen los problemas.\n\nAntes de comprar el próximo, revisá estas 3 cosas vos mismo: salud de batería, iCloud sin cuenta asociada, pantalla original. O directamente comprale a alguien que ya te lo entrega revisado.\n\nComentá \"revisar\" y te decimos gratis cómo revisar el que estás por comprar, sea a nosotros o a cualquier otro.",
     "cuenta": "goapple.sj",
-    "estado": "publicando"
+    "estado": "error",
+    "error": "Meta 400 en 17841473531823260/media_publish: Media ID is not available"
   },
   {
     "id": "2026-10-28-cuotas",
